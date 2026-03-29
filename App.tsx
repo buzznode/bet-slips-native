@@ -127,9 +127,11 @@ export default function App() {
 
   if (!state) {
     return (
-      <SafeAreaView style={styles.loading}>
-        <Text style={styles.loadingText}>Loading…</Text>
-      </SafeAreaView>
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.loading}>
+          <Text style={styles.loadingText}>Loading…</Text>
+        </SafeAreaView>
+      </SafeAreaProvider>
     );
   }
 
