@@ -51,6 +51,7 @@ import BetHistory from './src/components/BetHistory';
 import RaceOutcome from './src/components/RaceOutcome';
 import BetSummaryModal from './src/components/BetSummaryModal';
 import DaySummaryModal from './src/components/DaySummaryModal';
+import BettorQuickView from './src/components/BettorQuickView';
 import ErrorToast from './src/components/ErrorToast';
 import { colors, spacing, radius, font } from './src/theme';
 
@@ -99,6 +100,7 @@ export default function App() {
   const [state, setState] = useState<AppState | null>(null);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [daySummaryOpen, setDaySummaryOpen] = useState(false);
+  const [quickViewBettorId, setQuickViewBettorId] = useState<string | null>(null);
   const [horseError, setHorseError] = useState<string | null>(null);
 
   // Load persisted state on mount
@@ -722,6 +724,7 @@ export default function App() {
           activeBettorId={activeBettorId}
           scratchConflicts={scratchConflicts}
           onSelect={(id) => updateTrack(activeTrackId, { activeBettorId: id })}
+          onLongPress={(id) => setQuickViewBettorId(id)}
           onAdd={handleAddBettor}
           onRename={handleRenameBettor}
           onRemove={handleRemoveBettor}
@@ -885,7 +888,7 @@ export default function App() {
               style={styles.daySummaryBtn}
               onPress={() => setDaySummaryOpen(true)}
             >
-              <Text style={styles.daySummaryBtnText}>🏁 View Day Summary</Text>
+              <Text style={styles.daySummaryBtnText}>🏁 Final Summary</Text>
             </Pressable>
           </View>
         )}
@@ -910,6 +913,14 @@ export default function App() {
           raceNumber={rdCurrentRace}
           bettors={bettors}
           onClose={() => setSummaryOpen(false)}
+        />
+      )}
+
+      {quickViewBettorId && (
+        <BettorQuickView
+          bettor={bettors.find((b) => b.id === quickViewBettorId)!}
+          results={activeTrack.results}
+          onClose={() => setQuickViewBettorId(null)}
         />
       )}
 

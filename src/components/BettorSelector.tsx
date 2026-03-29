@@ -15,6 +15,7 @@ interface BettorSelectorProps {
   activeBettorId: string;
   scratchConflicts: Record<string, number[]>;
   onSelect: (id: string) => void;
+  onLongPress: (id: string) => void;
   onAdd: (name: string) => void;
   onRename: (id: string, name: string) => void;
   onRemove: (id: string) => void;
@@ -25,6 +26,7 @@ export default function BettorSelector({
   activeBettorId,
   scratchConflicts,
   onSelect,
+  onLongPress,
   onAdd,
   onRename,
   onRemove,
@@ -80,7 +82,10 @@ export default function BettorSelector({
                 />
               ) : (
                 <View style={styles.tabInner}>
-                  <Pressable onPress={() => onSelect(bettor.id)}>
+                  <Pressable
+                  onPress={() => onSelect(bettor.id)}
+                  onLongPress={() => onLongPress(bettor.id)}
+                >
                     <Text
                       style={[styles.tabName, isActive && styles.tabNameActive]}
                     >
