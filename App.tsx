@@ -17,6 +17,7 @@ import {
   createBettor,
   createRaceDaySession,
   createTrack,
+  uuid,
 } from './src/types';
 import type {
   ModifierId,
@@ -315,7 +316,7 @@ export default function App() {
       templates: [
         ...templates,
         {
-          id: crypto.randomUUID(),
+          id: uuid(),
           name,
           betTypeId: active.selectedBetType!,
           modifier: effectiveModifier,

@@ -1,3 +1,10 @@
+export function uuid(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
 export type BetCategory = 'straight' | 'exotic' | 'multi-race';
 
 export interface BetType {
@@ -83,7 +90,7 @@ export interface BettorState {
 
 export function createBettor(name: string): BettorState {
   return {
-    id: crypto.randomUUID(),
+    id: uuid(),
     name,
     numHorses: 8,
     betUnit: 1.0,
@@ -116,7 +123,7 @@ export interface TrackSession {
 export function createTrack(name: string): TrackSession {
   const firstBettor = createBettor('Me');
   return {
-    id: crypto.randomUUID(),
+    id: uuid(),
     results: {},
     scratchedHorses: [],
     name,
