@@ -8,6 +8,7 @@ interface HorseButtonProps {
   number: number;
   variant?: HorseVariant;
   disabled?: boolean;
+  allowScratchedPress?: boolean;
   size?: 'normal' | 'small';
   onClick: () => void;
 }
@@ -16,10 +17,11 @@ export default function HorseButton({
   number,
   variant = 'default',
   disabled = false,
+  allowScratchedPress = false,
   size = 'normal',
   onClick,
 }: HorseButtonProps) {
-  const isDisabled = disabled || variant === 'scratched';
+  const isDisabled = disabled || (variant === 'scratched' && !allowScratchedPress);
 
   return (
     <Pressable

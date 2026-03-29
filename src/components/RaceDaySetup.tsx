@@ -191,6 +191,7 @@ export default function RaceDaySetup({
                       ? 'scratched'
                       : 'default'
                   }
+                  allowScratchedPress
                   onClick={() => handleToggleScratch(n)}
                 />
               ))}
