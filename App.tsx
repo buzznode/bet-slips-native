@@ -1,20 +1,944 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  ScrollView,
+  Text,
+  Pressable,
+  Alert,
+  StyleSheet,
+  StatusBar,
+} from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import {
+  BET_TYPES,
+  MODIFIERS,
+  createBettor,
+  createRaceDaySession,
+  createTrack,
+} from './src/types';
+import type {
+  ModifierId,
+  BettorState,
+  BetTemplate,
+  RaceDaySession,
+  TrackSession,
+  RaceResult,
+} from './src/types';
+import {
+  calculateCombinations,
+  generateCombinationList,
+  calculateLegCombinations,
+  generateLegCombinationList,
+  getMinHorses,
+} from './src/lib/betting';
+import { summarizeDay } from './src/lib/outcomes';
+
+import Header from './src/components/Header';
+import TrackSelector from './src/components/TrackSelector';
+import BettorSelector from './src/components/BettorSelector';
+import RaceDaySetup from './src/components/RaceDaySetup';
+import BetTemplates from './src/components/BetTemplates';
+import BetTypeSelector from './src/components/BetTypeSelector';
+import ModifierSelector from './src/components/ModifierSelector';
+import HorseSelector from './src/components/HorseSelector';
+import LegSelector from './src/components/LegSelector';
+import CalculateButton from './src/components/CalculateButton';
+import ResultsPanel from './src/components/ResultsPanel';
+import BetHistory from './src/components/BetHistory';
+import RaceOutcome from './src/components/RaceOutcome';
+import BetSummaryModal from './src/components/BetSummaryModal';
+import DaySummaryModal from './src/components/DaySummaryModal';
+import ErrorToast from './src/components/ErrorToast';
+import { colors, spacing, radius, font } from './src/theme';
+
+const STORAGE_KEY = 'bet-slips-native:v1';
+
+interface AppState {
+  tracks: TrackSession[];
+  activeTrackId: string;
+  templates: BetTemplate[];
+}
+
+function migrateState(raw: { tracks: TrackSession[]; activeTrackId: string }): {
+  tracks: TrackSession[];
+  activeTrackId: string;
+} {
+  return {
+    ...raw,
+    tracks: raw.tracks.map((t: TrackSession) => ({
+      ...t,
+      scratchedHorses: t.scratchedHorses ?? [],
+      bettors:
+        t.bettors?.map((bRaw: BettorState) => {
+          const { scratchedHorses: _sc, ...b } = bRaw as BettorState & { scratchedHorses?: number[] };
+          const { active: _active, ...savedRaceDay } = (b.raceDay ?? {}) as RaceDaySession & { active?: unknown };
+          const raceDay = { ...createRaceDaySession(), ...savedRaceDay };
+          const selectedModifier =
+            b.selectedModifier === 'straight' ? null : (b.selectedModifier ?? null);
+          return { ...b, raceDay, selectedModifier };
+        }) ?? [],
+      results: Object.fromEntries(
+        Object.entries(t.results ?? {}).map(([k, v]) => [
+          k,
+          { ...(v as RaceResult), fourth: (v as RaceResult).fourth ?? null },
+        ]),
+      ),
+    })),
+  };
+}
+
+function buildDefaultState(): AppState {
+  const firstTrack = createTrack('My Track');
+  return { tracks: [firstTrack], activeTrackId: firstTrack.id, templates: [] };
+}
 
 export default function App() {
+  const [state, setState] = useState<AppState | null>(null);
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [daySummaryOpen, setDaySummaryOpen] = useState(false);
+  const [horseError, setHorseError] = useState<string | null>(null);
+
+  // Load persisted state on mount
+  useEffect(() => {
+    AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed?.tracks?.length > 0) {
+            const migrated = migrateState(parsed);
+            setState({ ...migrated, templates: parsed.templates ?? [] });
+            return;
+          }
+        } catch {
+          // fall through to default
+        }
+      }
+      setState(buildDefaultState());
+    });
+  }, []);
+
+  // Persist on every state change
+  useEffect(() => {
+    if (!state) return;
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state)).catch(() => {});
+  }, [state]);
+
+  if (!state) {
+    return (
+      <SafeAreaView style={styles.loading}>
+        <Text style={styles.loadingText}>Loading…</Text>
+      </SafeAreaView>
+    );
+  }
+
+  const { tracks, activeTrackId, templates } = state;
+  const activeTrack = tracks.find((t) => t.id === activeTrackId)!;
+  const bettors = activeTrack.bettors;
+  const activeBettorId = activeTrack.activeBettorId;
+  const active = bettors.find((b) => b.id === activeBettorId)!;
+
+  const bettorTotals = Object.fromEntries(
+    bettors.map((b) => [b.id, b.history.reduce((s, e) => s + e.totalCost, 0)]),
+  );
+  const bettorTotal = active.history.reduce((s, e) => s + e.totalCost, 0);
+
+  const showOutcomePanel =
+    bettors.some((b) => b.history.length > 0) ||
+    Object.keys(activeTrack.results ?? {}).length > 0;
+
+  const allRacesComplete = (() => {
+    const { firstRace, lastRace } = active.raceDay;
+    for (let r = firstRace; r <= lastRace; r++) {
+      if (!activeTrack.results[r]?.first) return false;
+    }
+    return true;
+  })();
+
+  const superfectaRaces = new Set<number>(
+    bettors.flatMap((b) =>
+      b.history
+        .filter((e) => e.betType.toLowerCase() === 'superfecta')
+        .map((e) => e.raceNumber ?? 0),
+    ),
+  );
+
+  const isMultiRace =
+    BET_TYPES.find((b) => b.id === active.selectedBetType)?.category ===
+    'multi-race';
+
+  const rdCurrentRace = active.raceDay.currentRace;
+  const currentRaceConfig = active.raceDay.races[rdCurrentRace] ?? {
+    numHorses: active.numHorses,
+    scratchedHorses: [],
+  };
+  const effectiveNumHorses = currentRaceConfig.numHorses;
+  const effectiveScratchedHorses = currentRaceConfig.scratchedHorses;
+
+  const isRaceLocked = !!(
+    activeTrack.results[rdCurrentRace]?.first !== null &&
+    activeTrack.results[rdCurrentRace]?.first !== undefined
+  );
+
+  const scratchConflicts = Object.fromEntries(
+    bettors.map((b) => {
+      const scratched = b.raceDay.races[rdCurrentRace]?.scratchedHorses ?? [];
+      return [b.id, b.selectedHorses.filter((h) => scratched.includes(h))];
+    }),
+  );
+
+  const raceCosts: Record<number, Record<string, number>> = {};
+  for (const b of bettors) {
+    for (const e of b.history) {
+      if (e.raceNumber == null) continue;
+      if (!raceCosts[e.raceNumber]) raceCosts[e.raceNumber] = {};
+      raceCosts[e.raceNumber][b.id] =
+        (raceCosts[e.raceNumber][b.id] ?? 0) + e.totalCost;
+    }
+  }
+
+  const legConfigs = isMultiRace
+    ? active.selectedLegs.map((_, i) => {
+        const raceNum = rdCurrentRace + i;
+        return (
+          active.raceDay.races[raceNum] ?? {
+            numHorses: active.numHorses,
+            scratchedHorses: [],
+          }
+        );
+      })
+    : undefined;
+
+  // ── State helpers ──────────────────────────────────────────────────────────
+
+  function patchState(changes: Partial<AppState>) {
+    setState((prev) => prev ? { ...prev, ...changes } : prev);
+  }
+
+  function updateTrack(id: string, changes: Partial<TrackSession>) {
+    patchState({
+      tracks: tracks.map((t) => (t.id === id ? { ...t, ...changes } : t)),
+    });
+  }
+
+  function updateBettors(newBettors: BettorState[]) {
+    updateTrack(activeTrackId, { bettors: newBettors });
+  }
+
+  function updateActive(changes: Partial<BettorState>) {
+    updateBettors(
+      bettors.map((b) => (b.id === activeBettorId ? { ...b, ...changes } : b)),
+    );
+  }
+
+  // ── Track handlers ─────────────────────────────────────────────────────────
+
+  function handleAddTrack(name: string) {
+    const newTrack = createTrack(name);
+    patchState({
+      tracks: [...tracks, newTrack],
+      activeTrackId: newTrack.id,
+    });
+  }
+
+  function handleRenameTrack(id: string, name: string) {
+    updateTrack(id, { name });
+  }
+
+  function handleRemoveTrack(id: string) {
+    const remaining = tracks.filter((t) => t.id !== id);
+    patchState({
+      tracks: remaining,
+      ...(id === activeTrackId && remaining.length > 0
+        ? { activeTrackId: remaining[remaining.length - 1].id }
+        : {}),
+    });
+  }
+
+  function handleResultsChange(updatedResults: Record<number, RaceResult>) {
+    const lockingRace = Object.entries(updatedResults).find(([key, result]) => {
+      const raceNum = Number(key);
+      return result.first !== null && !activeTrack.results[raceNum]?.first;
+    })?.[0];
+
+    if (lockingRace !== undefined) {
+      const raceNum = Number(lockingRace);
+      const updatedBettors = bettors.map((b) => {
+        if (b.raceDay.currentRace !== raceNum) return b;
+        return {
+          ...b,
+          selectedBetType: null,
+          selectedModifier: null,
+          selectedHorses: [],
+          selectedLegs: [],
+          result: null,
+        };
+      });
+      updateTrack(activeTrackId, {
+        results: updatedResults,
+        bettors: updatedBettors,
+      });
+    } else {
+      updateTrack(activeTrackId, { results: updatedResults });
+    }
+  }
+
+  function handleAdvanceRace() {
+    if (rdCurrentRace >= active.raceDay.lastRace) return;
+    updateBettors(
+      bettors.map((b) =>
+        b.raceDay.currentRace === rdCurrentRace
+          ? { ...b, raceDay: { ...b.raceDay, currentRace: rdCurrentRace + 1 } }
+          : b,
+      ),
+    );
+  }
+
+  // ── Template handlers ──────────────────────────────────────────────────────
+
+  function handleSaveTemplate() {
+    if (!active.selectedBetType) return;
+    const bet = BET_TYPES.find((b) => b.id === active.selectedBetType)!;
+    const effectiveModifier = active.selectedModifier ?? 'straight';
+    const modifierName =
+      MODIFIERS.find((m) => m.id === effectiveModifier)?.name ?? '';
+    const isMultiRaceBet = bet.category === 'multi-race';
+    const unit =
+      active.betUnit % 1 === 0
+        ? `$${active.betUnit}`
+        : `$${active.betUnit.toFixed(2)}`;
+    const name = `${unit} ${bet.name}${!isMultiRaceBet && effectiveModifier !== 'straight' ? ' ' + modifierName : ''}`;
+    patchState({
+      templates: [
+        ...templates,
+        {
+          id: crypto.randomUUID(),
+          name,
+          betTypeId: active.selectedBetType!,
+          modifier: effectiveModifier,
+          betUnit: active.betUnit,
+        },
+      ],
+    });
+  }
+
+  function handleDeleteTemplate(id: string) {
+    patchState({ templates: templates.filter((t) => t.id !== id) });
+  }
+
+  function handleApplyTemplate(template: BetTemplate) {
+    const bet = BET_TYPES.find((b) => b.id === template.betTypeId);
+    if (!bet) return;
+    updateActive({
+      selectedBetType: template.betTypeId,
+      selectedModifier: template.modifier,
+      betUnit: template.betUnit,
+      selectedHorses: [],
+      selectedLegs:
+        bet.category === 'multi-race'
+          ? Array.from({ length: bet.positions }, () => [])
+          : [],
+      result: null,
+    });
+  }
+
+  // ── Bettor handlers ────────────────────────────────────────────────────────
+
+  function handleAddBettor(name: string) {
+    const newBettor = createBettor(name);
+    newBettor.raceDay = active.raceDay;
+    updateTrack(activeTrackId, {
+      bettors: [...bettors, newBettor],
+      activeBettorId: newBettor.id,
+    });
+  }
+
+  function handleRenameBettor(id: string, name: string) {
+    updateBettors(bettors.map((b) => (b.id === id ? { ...b, name } : b)));
+  }
+
+  function handleRemoveBettor(id: string) {
+    const remaining = bettors.filter((b) => b.id !== id);
+    const newActiveBettorId =
+      id === activeBettorId && remaining.length > 0
+        ? remaining[remaining.length - 1].id
+        : activeBettorId;
+    updateTrack(activeTrackId, {
+      bettors: remaining,
+      activeBettorId: newActiveBettorId,
+    });
+  }
+
+  // ── Bet / race handlers ────────────────────────────────────────────────────
+
+  function handleRaceDayChange(rd: RaceDaySession) {
+    const prev = active.raceDay;
+    const raceSwitched = rd.currentRace !== prev.currentRace;
+    const firstLastChanged =
+      rd.firstRace !== prev.firstRace || rd.lastRace !== prev.lastRace;
+
+    if (raceSwitched) {
+      setHorseError(null);
+      const clearSelections = {
+        selectedBetType: null,
+        selectedModifier: null,
+        selectedHorses: [],
+        selectedLegs: [],
+        result: null,
+      };
+      updateBettors(
+        bettors.map((b) => {
+          if (b.id === activeBettorId) {
+            return { ...b, raceDay: rd, ...clearSelections };
+          }
+          return {
+            ...b,
+            ...clearSelections,
+            raceDay: {
+              ...b.raceDay,
+              currentRace: rd.currentRace,
+              ...(firstLastChanged
+                ? { firstRace: rd.firstRace, lastRace: rd.lastRace }
+                : {}),
+            },
+          };
+        }),
+      );
+    } else {
+      const currentRaceNum = rd.currentRace;
+      const newRaceConfig = rd.races[currentRaceNum] ?? {
+        numHorses: active.numHorses,
+        scratchedHorses: [],
+      };
+      const newScratched = newRaceConfig.scratchedHorses;
+      const newNumHorses = newRaceConfig.numHorses;
+      updateBettors(
+        bettors.map((b) => {
+          if (b.id === activeBettorId) {
+            return {
+              ...b,
+              raceDay: rd,
+              selectedHorses: active.selectedHorses.filter(
+                (h) => !newScratched.includes(h) && h <= newNumHorses,
+              ),
+              result: null,
+            };
+          }
+          const bRaceConfig = b.raceDay.races[currentRaceNum] ?? {
+            numHorses: b.numHorses,
+            scratchedHorses: [],
+          };
+          return {
+            ...b,
+            raceDay: {
+              ...b.raceDay,
+              ...(firstLastChanged
+                ? {
+                    firstRace: rd.firstRace,
+                    lastRace: rd.lastRace,
+                    currentRace: Math.min(
+                      Math.max(b.raceDay.currentRace, rd.firstRace),
+                      rd.lastRace,
+                    ),
+                  }
+                : {}),
+              races: {
+                ...b.raceDay.races,
+                [currentRaceNum]: {
+                  ...bRaceConfig,
+                  numHorses: newNumHorses,
+                  scratchedHorses: newScratched,
+                },
+              },
+            },
+            selectedHorses:
+              b.raceDay.currentRace === currentRaceNum
+                ? b.selectedHorses.filter(
+                    (h) => !newScratched.includes(h) && h <= newNumHorses,
+                  )
+                : b.selectedHorses,
+          };
+        }),
+      );
+    }
+  }
+
+  function handleResetApp() {
+    Alert.alert(
+      'Reset Everything?',
+      'This will clear all tracks, bettors, and bet history. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: () => {
+            AsyncStorage.removeItem(STORAGE_KEY);
+            setState(buildDefaultState());
+          },
+        },
+      ],
+    );
+  }
+
+  function handleReset() {
+    updateActive({
+      selectedBetType: null,
+      selectedModifier: null,
+      selectedHorses: [],
+      selectedLegs: [],
+      result: null,
+    });
+  }
+
+  function handleToggleHorse(horse: number) {
+    const isDeselecting = active.selectedHorses.includes(horse);
+    if (
+      !isDeselecting &&
+      (active.selectedModifier === 'straight' || active.selectedModifier === null)
+    ) {
+      const bet = BET_TYPES.find((b) => b.id === active.selectedBetType);
+      if (bet && active.selectedHorses.length >= bet.positions) {
+        const max = bet.positions;
+        setHorseError(
+          `A straight ${bet.name} uses exactly ${max} horse${max === 1 ? '' : 's'}. Deselect one to swap your pick.`,
+        );
+        return;
+      }
+    }
+    setHorseError(null);
+    updateBettors(
+      bettors.map((b) => {
+        if (b.id !== activeBettorId) return b;
+        return {
+          ...b,
+          selectedHorses: b.selectedHorses.includes(horse)
+            ? b.selectedHorses.filter((h) => h !== horse)
+            : [...b.selectedHorses, horse],
+          result: null,
+        };
+      }),
+    );
+  }
+
+  function handleToggleLegHorse(legIndex: number, horse: number) {
+    updateBettors(
+      bettors.map((b) => {
+        if (b.id !== activeBettorId) return b;
+        return {
+          ...b,
+          selectedLegs: b.selectedLegs.map((leg, i) =>
+            i === legIndex
+              ? leg.includes(horse)
+                ? leg.filter((h) => h !== horse)
+                : [...leg, horse]
+              : leg,
+          ),
+          result: null,
+        };
+      }),
+    );
+  }
+
+  function handleSelectBetType(id: string) {
+    const bet = BET_TYPES.find((b) => b.id === id);
+    setHorseError(null);
+    updateActive({
+      selectedBetType: id,
+      selectedHorses: [],
+      result: null,
+      selectedLegs:
+        bet?.category === 'multi-race'
+          ? Array.from({ length: bet.positions }, () => [])
+          : [],
+    });
+  }
+
+  function handleSelectModifier(id: ModifierId) {
+    setHorseError(null);
+    updateActive({ selectedModifier: id, result: null });
+  }
+
+  function handleCalculate() {
+    if (!active.selectedBetType) return;
+    const bet = BET_TYPES.find((b) => b.id === active.selectedBetType)!;
+
+    if (isMultiRace) {
+      const sortedLegs = active.selectedLegs.map((l) =>
+        [...l].sort((a, b) => a - b),
+      );
+      const combos = calculateLegCombinations(sortedLegs);
+      const totalCost = combos * active.betUnit;
+      const combinationList = generateLegCombinationList(sortedLegs);
+      const newResult = {
+        betType: bet.name,
+        modifier: '',
+        combinations: combos,
+        unitCost: active.betUnit,
+        totalCost,
+        horses: [],
+        legs: sortedLegs,
+        combinationList,
+        raceNumber: active.raceDay.currentRace,
+      };
+      updateActive({
+        result: newResult,
+        history: [...active.history, newResult],
+        selectedBetType: null,
+        selectedModifier: null,
+        selectedLegs: Array.from({ length: bet.positions }, () => []),
+      });
+      return;
+    }
+
+    if (active.selectedHorses.length === 0) return;
+
+    const effectiveModifier = active.selectedModifier ?? 'straight';
+    const orderedHorses =
+      effectiveModifier === 'key-horse' || effectiveModifier === 'wheel'
+        ? active.selectedHorses
+        : [...active.selectedHorses].sort((a, b) => a - b);
+    const combos = calculateCombinations(
+      active.selectedBetType,
+      effectiveModifier,
+      orderedHorses,
+    );
+    const totalCost = combos * active.betUnit;
+    const combinationList = generateCombinationList(
+      active.selectedBetType,
+      effectiveModifier,
+      orderedHorses,
+    );
+
+    const newResult = {
+      betType: bet.name,
+      modifier: effectiveModifier
+        .replace('-', ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase()),
+      combinations: combos,
+      unitCost: active.betUnit,
+      totalCost,
+      horses: orderedHorses,
+      combinationList,
+      raceNumber: active.raceDay.currentRace,
+    };
+    updateActive({
+      result: newResult,
+      history: [...active.history, newResult],
+      selectedBetType: null,
+      selectedModifier: null,
+      selectedHorses: [],
+    });
+  }
+
+  const canCalculate =
+    active.selectedBetType !== null &&
+    (isMultiRace
+      ? active.selectedLegs.length > 0 &&
+        active.selectedLegs.every((l) => l.length > 0)
+      : active.selectedHorses.length >=
+        getMinHorses(active.selectedBetType, active.selectedModifier));
+
+  const pendingCost =
+    canCalculate && active.selectedBetType
+      ? isMultiRace
+        ? calculateLegCombinations(active.selectedLegs) * active.betUnit
+        : calculateCombinations(
+            active.selectedBetType,
+            active.selectedModifier,
+            active.selectedHorses,
+          ) * active.betUnit
+      : null;
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <SafeAreaProvider>
+    <SafeAreaView style={styles.root}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.bg} />
+      <Header onReset={handleResetApp} />
+
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        <TrackSelector
+          tracks={tracks}
+          activeTrackId={activeTrackId}
+          trackTotal={Object.values(bettorTotals).reduce((s, v) => s + v, 0)}
+          onSelect={(id) => patchState({ activeTrackId: id })}
+          onAdd={handleAddTrack}
+          onRename={handleRenameTrack}
+          onRemove={handleRemoveTrack}
+        />
+
+        <BettorSelector
+          bettors={bettors}
+          activeBettorId={activeBettorId}
+          scratchConflicts={scratchConflicts}
+          onSelect={(id) => updateTrack(activeTrackId, { activeBettorId: id })}
+          onAdd={handleAddBettor}
+          onRename={handleRenameBettor}
+          onRemove={handleRemoveBettor}
+        />
+
+        <RaceDaySetup
+          raceDay={active.raceDay}
+          betUnit={active.betUnit}
+          budget={active.budget}
+          totalSpent={bettorTotal}
+          bettors={bettors}
+          raceCosts={raceCosts}
+          onBetUnitChange={(v) => updateActive({ betUnit: v, result: null })}
+          onBudgetChange={(v) => updateActive({ budget: v })}
+          onChange={handleRaceDayChange}
+        />
+
+        <BetTemplates
+          templates={templates}
+          currentBetTypeId={active.selectedBetType}
+          currentModifier={active.selectedModifier}
+          currentBetUnit={active.betUnit}
+          mode="apply"
+          onApply={handleApplyTemplate}
+          onSave={handleSaveTemplate}
+          onDelete={handleDeleteTemplate}
+        />
+
+        <BetTypeSelector
+          selectedBetType={active.selectedBetType}
+          numHorses={effectiveNumHorses}
+          disabled={isRaceLocked}
+          onSelect={handleSelectBetType}
+        />
+
+        {isRaceLocked && (
+          <View style={styles.raceLocked}>
+            <Text style={styles.raceLockedText}>
+              🔒 Race {rdCurrentRace} results posted
+            </Text>
+            {rdCurrentRace < active.raceDay.lastRace && (
+              <Pressable
+                style={styles.advanceBtn}
+                onPress={handleAdvanceRace}
+              >
+                <Text style={styles.advanceBtnText}>
+                  Race {rdCurrentRace + 1} →
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+
+        {!isMultiRace && (
+          <ModifierSelector
+            selected={active.selectedModifier}
+            disabled={isRaceLocked}
+            onSelect={handleSelectModifier}
+          />
+        )}
+
+        {isMultiRace ? (
+          <LegSelector
+            numHorses={effectiveNumHorses}
+            legs={active.selectedLegs}
+            onToggle={handleToggleLegHorse}
+            legConfigs={legConfigs}
+            startRace={rdCurrentRace}
+            disabled={isRaceLocked}
+          />
+        ) : (
+          <HorseSelector
+            numHorses={effectiveNumHorses}
+            selectedHorses={active.selectedHorses}
+            scratchedHorses={effectiveScratchedHorses}
+            scratchConflicts={scratchConflicts[activeBettorId] ?? []}
+            modifier={active.selectedModifier}
+            disabled={isRaceLocked}
+            onToggle={handleToggleHorse}
+          />
+        )}
+
+        <BetTemplates
+          templates={templates}
+          currentBetTypeId={active.selectedBetType}
+          currentModifier={active.selectedModifier}
+          currentBetUnit={active.betUnit}
+          mode="save"
+          onApply={handleApplyTemplate}
+          onSave={handleSaveTemplate}
+          onDelete={handleDeleteTemplate}
+        />
+
+        <CalculateButton
+          onClick={active.result ? handleReset : handleCalculate}
+          disabled={!active.result && !canCalculate}
+          variant={active.result ? 'reset' : 'calculate'}
+          pendingCost={pendingCost}
+        />
+
+        {active.result && <ResultsPanel result={active.result} />}
+
+        <BetHistory
+          history={active.history
+            .map((e, i) => ({ entry: e, originalIndex: i }))
+            .filter(({ entry }) => entry.raceNumber === rdCurrentRace)}
+          bettors={bettors
+            .filter((b) =>
+              b.history.some((e) => e.raceNumber === rdCurrentRace),
+            )
+            .map((b) => ({ id: b.id, name: b.name }))}
+          activeBettorId={activeBettorId}
+          onSelectBettor={(id) =>
+            updateTrack(activeTrackId, { activeBettorId: id })
+          }
+          onSlip={() => setSummaryOpen(true)}
+          raceNumber={rdCurrentRace}
+          results={activeTrack.results}
+          onRemove={(originalIndex) =>
+            updateActive({
+              history: active.history.filter(
+                (_, idx) => idx !== originalIndex,
+              ),
+            })
+          }
+          onClearAll={() =>
+            updateActive({
+              history: active.history.filter(
+                (e) => e.raceNumber !== rdCurrentRace,
+              ),
+            })
+          }
+          onSetPayout={(originalIndex, payout) =>
+            updateActive({
+              history: active.history.map((e, idx) =>
+                idx === originalIndex ? { ...e, payout } : e,
+              ),
+            })
+          }
+        />
+
+        {showOutcomePanel && (
+          <RaceOutcome
+            key={`raceday-${active.raceDay.firstRace}-${active.raceDay.lastRace}`}
+            isRaceDay
+            firstRace={active.raceDay.firstRace}
+            lastRace={active.raceDay.lastRace}
+            currentRace={rdCurrentRace}
+            races={active.raceDay.races}
+            numHorses={active.numHorses}
+            results={activeTrack.results}
+            superfectaRaces={superfectaRaces}
+            onChange={handleResultsChange}
+          />
+        )}
+
+        {allRacesComplete && bettors.some((b) => b.history.length > 0) && (
+          <View style={styles.daySummaryRow}>
+            <Pressable
+              style={styles.daySummaryBtn}
+              onPress={() => setDaySummaryOpen(true)}
+            >
+              <Text style={styles.daySummaryBtnText}>🏁 View Day Summary</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {/* bottom padding */}
+        <View style={{ height: 64 }} />
+      </ScrollView>
+
+      {daySummaryOpen && (
+        <DaySummaryModal
+          trackName={activeTrack.name}
+          firstRace={active.raceDay.firstRace}
+          lastRace={active.raceDay.lastRace}
+          summary={summarizeDay(bettors, activeTrack.results)}
+          onClose={() => setDaySummaryOpen(false)}
+        />
+      )}
+
+      {summaryOpen && (
+        <BetSummaryModal
+          trackName={activeTrack.name}
+          raceNumber={rdCurrentRace}
+          bettors={bettors}
+          onClose={() => setSummaryOpen(false)}
+        />
+      )}
+
+      {horseError && (
+        <ErrorToast
+          message={horseError}
+          onDismiss={() => setHorseError(null)}
+        />
+      )}
+    </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.bg,
+  },
+  loading: {
+    flex: 1,
+    backgroundColor: colors.bg,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  loadingText: {
+    color: colors.textDim,
+    fontSize: font.md,
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingTop: spacing.xs,
+  },
+  raceLocked: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.warningDim,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.warning,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  raceLockedText: {
+    color: colors.warning,
+    fontSize: font.sm,
+    fontWeight: '600',
+  },
+  advanceBtn: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+    borderRadius: radius.sm,
+    backgroundColor: colors.warning,
+  },
+  advanceBtnText: {
+    color: '#000',
+    fontSize: font.sm,
+    fontWeight: '700',
+  },
+  daySummaryRow: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  daySummaryBtn: {
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.primary,
+  },
+  daySummaryBtnText: {
+    color: '#fff',
+    fontSize: font.md,
+    fontWeight: '700',
   },
 });
