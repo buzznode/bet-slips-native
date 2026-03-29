@@ -28,10 +28,13 @@ export default function ErrorToast({ message, onDismiss }: ErrorToastProps) {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 32,
+    top: 0,
+    bottom: 0,
     left: spacing.lg,
     right: spacing.lg,
     zIndex: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   toast: {
     backgroundColor: colors.dangerDim,

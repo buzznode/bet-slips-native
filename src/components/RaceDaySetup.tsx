@@ -16,6 +16,7 @@ interface RaceDaySetupProps {
   totalSpent?: number;
   bettors?: BettorState[];
   raceCosts?: Record<number, Record<string, number>>;
+  scratchesLocked?: boolean;
   onBetUnitChange: (value: number) => void;
   onBudgetChange: (value: number | undefined) => void;
   onChange: (raceDay: RaceDaySession) => void;
@@ -28,6 +29,7 @@ export default function RaceDaySetup({
   totalSpent = 0,
   bettors = [],
   raceCosts = {},
+  scratchesLocked = false,
   onBetUnitChange,
   onBudgetChange,
   onChange,
@@ -173,12 +175,13 @@ export default function RaceDaySetup({
           </View>
 
           {/* Scratches */}
-          <View style={styles.scratches}>
+          <View style={[styles.scratches, scratchesLocked && styles.scratchesLocked]}>
             <Text style={styles.fieldLabel}>
               Scratches
               {currentConfig.scratchedHorses.length > 0
                 ? ` (${currentConfig.scratchedHorses.length})`
                 : ''}
+              {scratchesLocked ? '  🔒' : ''}
             </Text>
             <View style={styles.scratchGrid}>
               {horses.map((n) => (
@@ -191,8 +194,9 @@ export default function RaceDaySetup({
                       ? 'scratched'
                       : 'default'
                   }
-                  allowScratchedPress
-                  onClick={() => handleToggleScratch(n)}
+                  allowScratchedPress={!scratchesLocked}
+                  disabled={scratchesLocked}
+                  onClick={() => !scratchesLocked && handleToggleScratch(n)}
                 />
               ))}
             </View>
@@ -368,6 +372,9 @@ const styles = StyleSheet.create({
   },
   scratches: {
     marginTop: spacing.md,
+  },
+  scratchesLocked: {
+    opacity: 0.5,
   },
   scratchGrid: {
     flexDirection: 'row',

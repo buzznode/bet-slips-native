@@ -416,8 +416,27 @@ export default function App() {
       };
       const newScratched = newRaceConfig.scratchedHorses;
       const newNumHorses = newRaceConfig.numHorses;
+      const prevScratched = active.raceDay.races[currentRaceNum]?.scratchedHorses ?? [];
+      const newlyScratched = newScratched.filter((h) => !prevScratched.includes(h));
+
+      const affectedBettors: Array<{ name: string; count: number }> = [];
+
       updateBettors(
         bettors.map((b) => {
+          const conflictingBets = newlyScratched.length > 0
+            ? b.history.filter(
+                (e) => e.raceNumber === currentRaceNum && e.horses.some((h) => newlyScratched.includes(h)),
+              )
+            : [];
+          if (conflictingBets.length > 0) {
+            affectedBettors.push({ name: b.name, count: conflictingBets.length });
+          }
+          const cleanHistory = conflictingBets.length > 0
+            ? b.history.filter(
+                (e) => !(e.raceNumber === currentRaceNum && e.horses.some((h) => newlyScratched.includes(h))),
+              )
+            : b.history;
+
           if (b.id === activeBettorId) {
             return {
               ...b,
@@ -426,6 +445,7 @@ export default function App() {
                 (h) => !newScratched.includes(h) && h <= newNumHorses,
               ),
               result: null,
+              history: cleanHistory,
             };
           }
           const bRaceConfig = b.raceDay.races[currentRaceNum] ?? {
@@ -461,9 +481,20 @@ export default function App() {
                     (h) => !newScratched.includes(h) && h <= newNumHorses,
                   )
                 : b.selectedHorses,
+            history: cleanHistory,
           };
         }),
       );
+
+      if (affectedBettors.length > 0) {
+        const horseStr = newlyScratched.length === 1
+          ? `Horse ${newlyScratched[0]} scratched`
+          : `Horses ${newlyScratched.join(', ')} scratched`;
+        const bettorStr = affectedBettors
+          .map((a) => (a.count > 1 ? `${a.name} (${a.count} bets)` : a.name))
+          .join(', ');
+        setHorseError(`${horseStr} — bets removed for ${bettorStr}. Please re-enter.`);
+      }
     }
   }
 
@@ -692,6 +723,7 @@ export default function App() {
           totalSpent={bettorTotal}
           bettors={bettors}
           raceCosts={raceCosts}
+          scratchesLocked={isRaceLocked}
           onBetUnitChange={(v) => updateActive({ betUnit: v, result: null })}
           onBudgetChange={(v) => updateActive({ budget: v })}
           onChange={handleRaceDayChange}
