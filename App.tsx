@@ -151,14 +151,6 @@ export default function App() {
     bettors.some((b) => b.history.length > 0) ||
     Object.keys(activeTrack.results ?? {}).length > 0;
 
-  const allRacesComplete = (() => {
-    const { firstRace, lastRace } = active.raceDay;
-    for (let r = firstRace; r <= lastRace; r++) {
-      if (!activeTrack.results[r]?.first) return false;
-    }
-    return true;
-  })();
-
   const superfectaRaces = new Set<number>(
     bettors.flatMap((b) =>
       b.history
@@ -166,6 +158,22 @@ export default function App() {
         .map((e) => e.raceNumber ?? 0),
     ),
   );
+
+  const anyRaceComplete = (() => {
+    const { firstRace, lastRace } = active.raceDay;
+    for (let r = firstRace; r <= lastRace; r++) {
+      const res = activeTrack.results[r];
+      if (
+        res?.first != null &&
+        res?.second != null &&
+        res?.third != null &&
+        (!superfectaRaces.has(r) || res?.fourth != null)
+      ) {
+        return true;
+      }
+    }
+    return false;
+  })();
 
   const isMultiRace =
     BET_TYPES.find((b) => b.id === active.selectedBetType)?.category ===
@@ -871,7 +879,7 @@ export default function App() {
           />
         )}
 
-        {allRacesComplete && bettors.some((b) => b.history.length > 0) && (
+        {anyRaceComplete && bettors.some((b) => b.history.length > 0) && (
           <View style={styles.daySummaryRow}>
             <Pressable
               style={styles.daySummaryBtn}
