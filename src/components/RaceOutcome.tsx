@@ -51,6 +51,9 @@ export default function RaceOutcome({
   const horseCount = isRaceDay
     ? (races[selectedRace]?.numHorses ?? numHorses)
     : numHorses;
+  const scratchedHorses = isRaceDay
+    ? (races[selectedRace]?.scratchedHorses ?? [])
+    : [];
   const horses = Array.from({ length: horseCount }, (_, i) => i + 1);
 
   const raceNumbers = isRaceDay
@@ -165,6 +168,7 @@ export default function RaceOutcome({
                   {horses.map((h) => {
                     const isSelected = currentVal === h;
                     const isTaken = taken.includes(h);
+                    const isScratched = scratchedHorses.includes(h);
                     return (
                       <Pressable
                         key={h}
@@ -172,15 +176,17 @@ export default function RaceOutcome({
                           styles.horseBtn,
                           isSelected && styles.horseBtnSelected,
                           isTaken && styles.horseBtnTaken,
+                          isScratched && styles.horseBtnScratched,
                         ]}
-                        onPress={() => !isTaken && setPosition(pos, isSelected ? null : h)}
-                        disabled={isTaken}
+                        onPress={() => !isTaken && !isScratched && setPosition(pos, isSelected ? null : h)}
+                        disabled={isTaken || isScratched}
                       >
                         <Text
                           style={[
                             styles.horseBtnText,
                             isSelected && styles.horseBtnTextSelected,
                             isTaken && styles.horseBtnTextTaken,
+                            isScratched && styles.horseBtnScratched,
                           ]}
                         >
                           {h}
@@ -323,6 +329,11 @@ const styles = StyleSheet.create({
   },
   horseBtnTaken: {
     opacity: 0.25,
+  },
+  horseBtnScratched: {
+    backgroundColor: colors.scratch,
+    borderColor: colors.scratch,
+    opacity: 0.5,
   },
   horseBtnText: {
     color: colors.text,
