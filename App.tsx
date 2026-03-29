@@ -179,9 +179,12 @@ export default function App() {
   const effectiveNumHorses = currentRaceConfig.numHorses;
   const effectiveScratchedHorses = currentRaceConfig.scratchedHorses;
 
+  const currentRaceResult = activeTrack.results[rdCurrentRace];
   const isRaceLocked = !!(
-    activeTrack.results[rdCurrentRace]?.first !== null &&
-    activeTrack.results[rdCurrentRace]?.first !== undefined
+    currentRaceResult?.first != null &&
+    currentRaceResult?.second != null &&
+    currentRaceResult?.third != null &&
+    (!superfectaRaces.has(rdCurrentRace) || currentRaceResult?.fourth != null)
   );
 
   const scratchConflicts = Object.fromEntries(
