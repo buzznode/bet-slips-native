@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, Text, StyleSheet } from 'react-native';
 import { colors, radius, font } from '../theme';
+import { haptic } from '../lib/haptics';
 
 export type HorseVariant = 'default' | 'selected' | 'key' | 'with' | 'scratched';
 
@@ -34,7 +35,7 @@ export default function HorseButton({
         variant === 'scratched' && styles.scratched,
         isDisabled && styles.disabled,
       ]}
-      onPress={isDisabled ? undefined : onClick}
+      onPress={isDisabled ? undefined : () => { haptic.selection(); onClick(); }}
       disabled={isDisabled}
     >
       <Text

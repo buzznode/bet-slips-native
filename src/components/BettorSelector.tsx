@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import type { BettorState } from '../types';
 import { colors, spacing, radius, font } from '../theme';
+import { haptic } from '../lib/haptics';
 
 interface BettorSelectorProps {
   bettors: BettorState[];
@@ -83,8 +84,8 @@ export default function BettorSelector({
               ) : (
                 <View style={styles.tabInner}>
                   <Pressable
-                  onPress={() => onSelect(bettor.id)}
-                  onLongPress={() => onLongPress(bettor.id)}
+                  onPress={() => { haptic.selection(); onSelect(bettor.id); }}
+                  onLongPress={() => { haptic.heavy(); onLongPress(bettor.id); }}
                 >
                     <Text
                       style={[styles.tabName, isActive && styles.tabNameActive]}

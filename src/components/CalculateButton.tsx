@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, Text, StyleSheet } from 'react-native';
 import { colors, spacing, radius, font } from '../theme';
+import { haptic } from '../lib/haptics';
 
 interface CalculateButtonProps {
   onClick: () => void;
@@ -33,7 +34,7 @@ export default function CalculateButton({
         variant === 'reset' && styles.reset,
         disabled && styles.disabled,
       ]}
-      onPress={onClick}
+      onPress={() => { haptic.medium(); onClick(); }}
       disabled={disabled}
     >
       <Text style={[styles.text, variant === 'reset' && styles.textReset]}>

@@ -4,6 +4,7 @@ import type { RaceDaySession } from '../types';
 import HorseButton from './HorseButton';
 import SelectPicker from './SelectPicker';
 import { colors, spacing, radius, font } from '../theme';
+import { haptic } from '../lib/haptics';
 
 const HORSE_COUNTS = Array.from({ length: 19 }, (_, i) => i + 2); // 2–20
 const BET_UNITS = [0.1, 0.5, 1.0, 2.0, 5.0, 10.0];
@@ -145,7 +146,7 @@ export default function RaceDaySetup({
                 styles.navBtn,
                 raceDay.currentRace <= raceDay.firstRace && styles.navBtnDisabled,
               ]}
-              onPress={() => update({ currentRace: raceDay.currentRace - 1 })}
+              onPress={() => { haptic.selection(); update({ currentRace: raceDay.currentRace - 1 }); }}
               disabled={raceDay.currentRace <= raceDay.firstRace}
             >
               <Text style={styles.navBtnText}>‹</Text>
@@ -156,7 +157,7 @@ export default function RaceDaySetup({
                 styles.navBtn,
                 raceDay.currentRace >= raceDay.lastRace && styles.navBtnDisabled,
               ]}
-              onPress={() => update({ currentRace: raceDay.currentRace + 1 })}
+              onPress={() => { haptic.selection(); update({ currentRace: raceDay.currentRace + 1 }); }}
               disabled={raceDay.currentRace >= raceDay.lastRace}
             >
               <Text style={styles.navBtnText}>›</Text>

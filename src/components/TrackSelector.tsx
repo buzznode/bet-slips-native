@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import type { TrackSession } from '../types';
 import { colors, spacing, radius, font } from '../theme';
+import { haptic } from '../lib/haptics';
 
 function hasResults(track: TrackSession): boolean {
   return Object.values(track.results ?? {}).some((r) => r.first !== null);
@@ -86,8 +87,8 @@ export default function TrackSelector({
               ) : (
                 <View style={styles.tabInner}>
                   <Pressable
-                    onPress={() => onSelect(track.id)}
-                    onLongPress={() => onLongPress(track.id)}
+                    onPress={() => { haptic.selection(); onSelect(track.id); }}
+                    onLongPress={() => { haptic.heavy(); onLongPress(track.id); }}
                   >
                     <Text style={[styles.tabName, isActive && styles.tabNameActive]}>
                       {track.name}

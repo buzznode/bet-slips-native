@@ -10,6 +10,7 @@ import {
 import type { BetResult, RaceResult } from '../types';
 import { checkBetOutcome } from '../lib/outcomes';
 import { colors, spacing, radius, font } from '../theme';
+import { haptic } from '../lib/haptics';
 
 interface BettorPill {
   id: string;
@@ -103,7 +104,7 @@ function BetEntry({
         <Text style={styles.entryHorses}>{formatHorsesText(entry)}</Text>
         <Text style={styles.entryCost}>${entry.totalCost.toFixed(2)}</Text>
         {!locked && (
-          <Pressable onPress={onRemove} style={styles.removeBtn}>
+          <Pressable onPress={() => { haptic.medium(); onRemove(); }} style={styles.removeBtn}>
             <Text style={styles.removeBtnText}>🗑</Text>
           </Pressable>
         )}
@@ -193,7 +194,7 @@ export default function BetHistory({
 
           {!locked && (
             <View style={styles.actions}>
-              <Pressable onPress={onClearAll}>
+              <Pressable onPress={() => { haptic.heavy(); onClearAll(); }}>
                 <Text style={styles.clearAll}>Clear All</Text>
               </Pressable>
             </View>
