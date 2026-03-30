@@ -18,9 +18,15 @@ interface BetSummaryModalProps {
   onClose: () => void;
 }
 
+const KEY_MODIFIERS = ['Key Horse', 'Wheel', 'Part Wheel'];
+
 function formatHorses(result: BetResult): string {
   if (result.legs && result.legs.length > 0) {
     return result.legs.map((leg, i) => `R${i + 1}: ${leg.join(',')}`).join(' / ');
+  }
+  if (KEY_MODIFIERS.includes(result.modifier) && result.horses.length > 0) {
+    const [key, ...rest] = result.horses;
+    return rest.length > 0 ? `${key} / ${rest.join(', ')}` : String(key);
   }
   return result.horses.join(', ');
 }
