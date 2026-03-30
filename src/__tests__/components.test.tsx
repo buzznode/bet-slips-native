@@ -98,10 +98,15 @@ describe('BetHistory', () => {
     expect(getByText('1')).toBeTruthy();
   });
 
-  it('expands body on header press', () => {
+  it('shows body by default', () => {
     const { getByText } = render(<BetHistory {...defaultProps} />);
-    fireEvent.press(getByText('Race 1 Bets'));
     expect(getByText('Clear All')).toBeTruthy();
+  });
+
+  it('collapses body on header press', () => {
+    const { getByText, queryByText } = render(<BetHistory {...defaultProps} />);
+    fireEvent.press(getByText('Race 1 Bets'));
+    expect(queryByText('Clear All')).toBeNull();
   });
 
   it('calls onClearAll when Clear All is pressed', () => {
@@ -109,17 +114,15 @@ describe('BetHistory', () => {
     const { getByText } = render(
       <BetHistory {...defaultProps} onClearAll={onClearAll} />,
     );
-    fireEvent.press(getByText('Race 1 Bets'));
     fireEvent.press(getByText('Clear All'));
     expect(onClearAll).toHaveBeenCalledTimes(1);
   });
 
   it('calls onRemove when trash is pressed', () => {
     const onRemove = jest.fn();
-    const { getByText, getAllByText } = render(
+    const { getAllByText } = render(
       <BetHistory {...defaultProps} onRemove={onRemove} />,
     );
-    fireEvent.press(getByText('Race 1 Bets'));
     fireEvent.press(getAllByText('🗑')[0]);
     expect(onRemove).toHaveBeenCalledWith(0);
   });

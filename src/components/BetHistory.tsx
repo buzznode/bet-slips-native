@@ -137,7 +137,7 @@ export default function BetHistory({
   onClearAll,
   onSetPayout,
 }: BetHistoryProps) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
 
   if (history.length === 0) return null;
 
