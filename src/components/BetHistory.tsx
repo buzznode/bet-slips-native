@@ -22,6 +22,7 @@ interface BetHistoryProps {
   results: Record<number, RaceResult>;
   bettors?: BettorPill[];
   activeBettorId?: string;
+  locked?: boolean;
   onSelectBettor?: (id: string) => void;
   onSlip?: () => void;
   onRemove: (originalIndex: number) => void;
@@ -51,12 +52,14 @@ function BetEntry({
   entry,
   originalIndex,
   results,
+  locked,
   onRemove,
   onSetPayout,
 }: {
   entry: BetResult;
   originalIndex: number;
   results: Record<number, RaceResult>;
+  locked: boolean;
   onRemove: () => void;
   onSetPayout: (payout: number | undefined) => void;
 }) {
@@ -99,9 +102,11 @@ function BetEntry({
       <View style={styles.entrySub}>
         <Text style={styles.entryHorses}>{formatHorsesText(entry)}</Text>
         <Text style={styles.entryCost}>${entry.totalCost.toFixed(2)}</Text>
-        <Pressable onPress={onRemove} style={styles.removeBtn}>
-          <Text style={styles.removeBtnText}>🗑</Text>
-        </Pressable>
+        {!locked && (
+          <Pressable onPress={onRemove} style={styles.removeBtn}>
+            <Text style={styles.removeBtnText}>🗑</Text>
+          </Pressable>
+        )}
       </View>
     </View>
   );
@@ -113,6 +118,7 @@ export default function BetHistory({
   results,
   bettors = [],
   activeBettorId,
+  locked = false,
   onSelectBettor,
   onSlip,
   onRemove,
@@ -185,11 +191,13 @@ export default function BetHistory({
             </ScrollView>
           )}
 
-          <View style={styles.actions}>
-            <Pressable onPress={onClearAll}>
-              <Text style={styles.clearAll}>Clear All</Text>
-            </Pressable>
-          </View>
+          {!locked && (
+            <View style={styles.actions}>
+              <Pressable onPress={onClearAll}>
+                <Text style={styles.clearAll}>Clear All</Text>
+              </Pressable>
+            </View>
+          )}
 
           {reversed.map(({ entry, originalIndex }) => (
             <BetEntry
@@ -197,6 +205,7 @@ export default function BetHistory({
               entry={entry}
               originalIndex={originalIndex}
               results={results}
+              locked={locked}
               onRemove={() => onRemove(originalIndex)}
               onSetPayout={(payout) => onSetPayout(originalIndex, payout)}
             />

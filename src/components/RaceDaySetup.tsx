@@ -17,6 +17,7 @@ interface RaceDaySetupProps {
   bettors?: BettorState[];
   raceCosts?: Record<number, Record<string, number>>;
   scratchesLocked?: boolean;
+  configLocked?: boolean;
   onBetUnitChange: (value: number) => void;
   onBudgetChange: (value: number | undefined) => void;
   onChange: (raceDay: RaceDaySession) => void;
@@ -30,6 +31,7 @@ export default function RaceDaySetup({
   bettors = [],
   raceCosts = {},
   scratchesLocked = false,
+  configLocked = false,
   onBetUnitChange,
   onBudgetChange,
   onChange,
@@ -114,6 +116,7 @@ export default function RaceDaySetup({
               label="First Race"
               value={raceDay.firstRace}
               options={firstRaceOptions}
+              disabled={configLocked}
               onChange={(first) => {
                 const last = Math.max(first + 1, raceDay.lastRace);
                 const current = Math.max(first, Math.min(raceDay.currentRace, last));
@@ -125,6 +128,7 @@ export default function RaceDaySetup({
               label="Last Race"
               value={raceDay.lastRace}
               options={lastRaceOptions}
+              disabled={configLocked}
               onChange={(last) => {
                 const first = Math.min(raceDay.firstRace, last - 1);
                 const current = Math.max(first, Math.min(raceDay.currentRace, last));
@@ -135,6 +139,7 @@ export default function RaceDaySetup({
               label="Bet Unit"
               value={betUnit}
               options={betUnitOptions}
+              disabled={configLocked}
               onChange={onBetUnitChange}
             />
           </View>
@@ -170,6 +175,7 @@ export default function RaceDaySetup({
               label="Horses in Race"
               value={currentConfig.numHorses}
               options={horseCountOptions}
+              disabled={configLocked}
               onChange={(n) => updateCurrentRace({ numHorses: n })}
             />
           </View>

@@ -19,6 +19,7 @@ interface SelectPickerProps<T> {
   label: string;
   value: T;
   options: Option<T>[];
+  disabled?: boolean;
   onChange: (value: T) => void;
 }
 
@@ -26,6 +27,7 @@ export default function SelectPicker<T extends string | number>({
   label,
   value,
   options,
+  disabled = false,
   onChange,
 }: SelectPickerProps<T>) {
   const [open, setOpen] = useState(false);
@@ -33,9 +35,9 @@ export default function SelectPicker<T extends string | number>({
 
   return (
     <>
-      <View style={styles.wrapper}>
+      <View style={[styles.wrapper, disabled && styles.wrapperDisabled]}>
         <Text style={styles.label}>{label}</Text>
-        <Pressable style={styles.trigger} onPress={() => setOpen(true)}>
+        <Pressable style={styles.trigger} onPress={() => !disabled && setOpen(true)} disabled={disabled}>
           <Text style={styles.triggerText}>{selected?.label ?? '—'}</Text>
           <Text style={styles.chevron}>›</Text>
         </Pressable>
@@ -91,6 +93,9 @@ export default function SelectPicker<T extends string | number>({
 const styles = StyleSheet.create({
   wrapper: {
     gap: spacing.xs,
+  },
+  wrapperDisabled: {
+    opacity: 0.4,
   },
   label: {
     color: colors.textMuted,

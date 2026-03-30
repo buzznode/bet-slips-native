@@ -738,6 +738,7 @@ export default function App() {
           bettors={bettors}
           raceCosts={raceCosts}
           scratchesLocked={isRaceLocked}
+          configLocked={isRaceLocked}
           onBetUnitChange={(v) => updateActive({ betUnit: v, result: null })}
           onBudgetChange={(v) => updateActive({ budget: v })}
           onChange={handleRaceDayChange}
@@ -844,6 +845,7 @@ export default function App() {
           onSlip={() => setSummaryOpen(true)}
           raceNumber={rdCurrentRace}
           results={activeTrack.results}
+          locked={isRaceLocked}
           onRemove={(originalIndex) =>
             updateActive({
               history: active.history.filter(
