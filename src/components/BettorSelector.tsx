@@ -15,6 +15,7 @@ interface BettorSelectorProps {
   bettors: BettorState[];
   activeBettorId: string;
   scratchConflicts: Record<string, number[]>;
+  unpaidWins: Record<string, boolean>;
   onSelect: (id: string) => void;
   onLongPress: (id: string) => void;
   onAdd: (name: string) => void;
@@ -26,6 +27,7 @@ export default function BettorSelector({
   bettors,
   activeBettorId,
   scratchConflicts,
+  unpaidWins,
   onSelect,
   onLongPress,
   onAdd,
@@ -64,6 +66,7 @@ export default function BettorSelector({
         {bettors.map((bettor) => {
           const isActive = bettor.id === activeBettorId;
           const hasConflict = (scratchConflicts[bettor.id]?.length ?? 0) > 0;
+          const hasUnpaidWin = unpaidWins[bettor.id] ?? false;
           return (
             <View
               key={bettor.id}
@@ -91,7 +94,7 @@ export default function BettorSelector({
                       style={[styles.tabName, isActive && styles.tabNameActive]}
                     >
                       {bettor.name}
-                      {hasConflict ? ' ⚠️' : ''}
+                      {hasUnpaidWin ? ' 💰' : hasConflict ? ' ⚠️' : ''}
                     </Text>
                   </Pressable>
                   {isActive && (

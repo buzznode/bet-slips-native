@@ -34,7 +34,7 @@ import {
   generateLegCombinationList,
   getMinHorses,
 } from './src/lib/betting';
-import { summarizeDay } from './src/lib/outcomes';
+import { summarizeDay, checkBetOutcome } from './src/lib/outcomes';
 import { exportBackup, importBackup } from './src/lib/backup';
 
 import Header from './src/components/Header';
@@ -205,6 +205,15 @@ export default function App() {
       const scratched = b.raceDay.races[rdCurrentRace]?.scratchedHorses ?? [];
       return [b.id, b.selectedHorses.filter((h) => scratched.includes(h))];
     }),
+  );
+
+  const unpaidWins = Object.fromEntries(
+    bettors.map((b) => [
+      b.id,
+      b.history.some(
+        (e) => checkBetOutcome(e, activeTrack.results) === 'win' && e.payout === undefined,
+      ),
+    ]),
   );
 
 
@@ -750,6 +759,7 @@ export default function App() {
           bettors={bettors}
           activeBettorId={activeBettorId}
           scratchConflicts={scratchConflicts}
+          unpaidWins={unpaidWins}
           onSelect={(id) => updateTrack(activeTrackId, { activeBettorId: id })}
           onLongPress={(id) => setQuickViewBettorId(id)}
           onAdd={handleAddBettor}
