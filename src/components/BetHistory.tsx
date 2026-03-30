@@ -15,6 +15,7 @@ import { haptic } from '../lib/haptics';
 interface BettorPill {
   id: string;
   name: string;
+  hasUnpaidWin?: boolean;
 }
 
 interface BetHistoryProps {
@@ -185,7 +186,7 @@ export default function BetHistory({
                       b.id === activeBettorId && styles.pillTextActive,
                     ]}
                   >
-                    {b.name}
+                    {b.name}{b.hasUnpaidWin ? ' 💰' : ''}
                   </Text>
                 </Pressable>
               ))}

@@ -872,7 +872,7 @@ export default function App() {
             .filter((b) =>
               b.history.some((e) => e.raceNumber === rdCurrentRace),
             )
-            .map((b) => ({ id: b.id, name: b.name }))}
+            .map((b) => ({ id: b.id, name: b.name, hasUnpaidWin: unpaidWins[b.id] ?? false }))}
           activeBettorId={activeBettorId}
           onSelectBettor={(id) =>
             updateTrack(activeTrackId, { activeBettorId: id })
