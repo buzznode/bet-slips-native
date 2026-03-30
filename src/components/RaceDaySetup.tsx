@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, TextInput, ScrollView, StyleSheet } from 'react-native';
-import type { BettorState, RaceDaySession } from '../types';
+import { View, Text, Pressable, TextInput, StyleSheet } from 'react-native';
+import type { RaceDaySession } from '../types';
 import HorseButton from './HorseButton';
 import SelectPicker from './SelectPicker';
 import { colors, spacing, radius, font } from '../theme';
@@ -14,8 +14,6 @@ interface RaceDaySetupProps {
   betUnit: number;
   budget?: number;
   totalSpent?: number;
-  bettors?: BettorState[];
-  raceCosts?: Record<number, Record<string, number>>;
   scratchesLocked?: boolean;
   configLocked?: boolean;
   onBetUnitChange: (value: number) => void;
@@ -28,8 +26,6 @@ export default function RaceDaySetup({
   betUnit,
   budget,
   totalSpent = 0,
-  bettors = [],
-  raceCosts = {},
   scratchesLocked = false,
   configLocked = false,
   onBetUnitChange,
@@ -98,8 +94,6 @@ export default function RaceDaySetup({
     label: `${n} horses`,
     value: n,
   }));
-
-  const raceCostRaces = Object.keys(raceCosts).map(Number).sort((a, b) => a - b);
 
   return (
     <View style={styles.section}>
@@ -252,44 +246,6 @@ export default function RaceDaySetup({
             )}
           </View>
 
-          {/* Cost per race table */}
-          {bettors.length > 0 && raceCostRaces.length > 0 && (
-            <View style={styles.costs}>
-              <Text style={styles.fieldLabel}>Cost per Race</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View>
-                  {/* Header */}
-                  <View style={styles.tableRow}>
-                    <Text style={[styles.tableCell, styles.tableCellHeader]}>Race</Text>
-                    {bettors.map((b) => (
-                      <Text key={b.id} style={[styles.tableCell, styles.tableCellHeader]}>
-                        {b.name}
-                      </Text>
-                    ))}
-                  </View>
-                  {/* Rows */}
-                  {raceCostRaces.map((raceNum) => (
-                    <View
-                      key={raceNum}
-                      style={[
-                        styles.tableRow,
-                        raceNum === raceDay.currentRace && styles.tableRowCurrent,
-                      ]}
-                    >
-                      <Text style={styles.tableCell}>R{raceNum}</Text>
-                      {bettors.map((b) => (
-                        <Text key={b.id} style={styles.tableCell}>
-                          {raceCosts[raceNum]?.[b.id]
-                            ? `$${raceCosts[raceNum][b.id].toFixed(2)}`
-                            : '—'}
-                        </Text>
-                      ))}
-                    </View>
-                  ))}
-                </View>
-              </ScrollView>
-            </View>
-          )}
         </>
       )}
     </View>
@@ -442,29 +398,5 @@ const styles = StyleSheet.create({
   },
   budgetLabelOver: {
     color: colors.danger,
-  },
-  costs: {
-    marginTop: spacing.md,
-  },
-  tableRow: {
-    flexDirection: 'row',
-  },
-  tableRowCurrent: {
-    backgroundColor: colors.primaryDim,
-  },
-  tableCell: {
-    color: colors.textMuted,
-    fontSize: font.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs + 2,
-    minWidth: 64,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  tableCellHeader: {
-    color: colors.textDim,
-    fontWeight: '700',
-    fontSize: 11,
-    textTransform: 'uppercase',
   },
 });

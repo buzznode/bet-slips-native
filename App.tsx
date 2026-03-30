@@ -204,15 +204,6 @@ export default function App() {
     }),
   );
 
-  const raceCosts: Record<number, Record<string, number>> = {};
-  for (const b of bettors) {
-    for (const e of b.history) {
-      if (e.raceNumber == null) continue;
-      if (!raceCosts[e.raceNumber]) raceCosts[e.raceNumber] = {};
-      raceCosts[e.raceNumber][b.id] =
-        (raceCosts[e.raceNumber][b.id] ?? 0) + e.totalCost;
-    }
-  }
 
   const legConfigs = isMultiRace
     ? active.selectedLegs.map((_, i) => {
@@ -735,8 +726,6 @@ export default function App() {
           betUnit={active.betUnit}
           budget={active.budget}
           totalSpent={bettorTotal}
-          bettors={bettors}
-          raceCosts={raceCosts}
           scratchesLocked={isRaceLocked}
           configLocked={isRaceLocked}
           onBetUnitChange={(v) => updateActive({ betUnit: v, result: null })}
