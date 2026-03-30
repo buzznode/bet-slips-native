@@ -71,9 +71,9 @@ export default function TrackQuickView({
     raceNumbers.some((r) => b.history.some((e) => e.raceNumber === r)),
   );
 
-  // Width = name chars × 8px + 28px for ✓/✗ + padding, minimum 60px
+  // Width = name chars × 9px + 40px for ✓/✗ + padding, minimum 80px
   function colWidth(name: string): number {
-    return Math.max(60, name.length * 8 + 28);
+    return Math.max(80, name.length * 9 + 40);
   }
 
   return (
