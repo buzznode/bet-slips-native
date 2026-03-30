@@ -721,6 +721,24 @@ export default function App() {
           onRemove={handleRemoveBettor}
         />
 
+        {isRaceLocked && (
+          <View style={styles.raceLocked}>
+            <Text style={styles.raceLockedText}>
+              🔒 Race {rdCurrentRace} results posted
+            </Text>
+            {rdCurrentRace < active.raceDay.lastRace && (
+              <Pressable
+                style={styles.advanceBtn}
+                onPress={handleAdvanceRace}
+              >
+                <Text style={styles.advanceBtnText}>
+                  Race {rdCurrentRace + 1} →
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+
         <RaceDaySetup
           raceDay={active.raceDay}
           betUnit={active.betUnit}
@@ -750,24 +768,6 @@ export default function App() {
           disabled={isRaceLocked}
           onSelect={handleSelectBetType}
         />
-
-        {isRaceLocked && (
-          <View style={styles.raceLocked}>
-            <Text style={styles.raceLockedText}>
-              🔒 Race {rdCurrentRace} results posted
-            </Text>
-            {rdCurrentRace < active.raceDay.lastRace && (
-              <Pressable
-                style={styles.advanceBtn}
-                onPress={handleAdvanceRace}
-              >
-                <Text style={styles.advanceBtnText}>
-                  Race {rdCurrentRace + 1} →
-                </Text>
-              </Pressable>
-            )}
-          </View>
-        )}
 
         {!isMultiRace && (
           <ModifierSelector
