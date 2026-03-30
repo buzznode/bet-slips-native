@@ -885,6 +885,7 @@ export default function App() {
         {active.result && <ResultsPanel result={active.result} />}
 
         <BetHistory
+          key={activeBettorId}
           history={active.history
             .map((e, i) => ({ entry: e, originalIndex: i }))
             .filter(({ entry }) => entry.raceNumber === rdCurrentRace)}
