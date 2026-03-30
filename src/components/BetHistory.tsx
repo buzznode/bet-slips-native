@@ -66,6 +66,9 @@ function BetEntry({
   onSetPayout: (payout: number | undefined) => void;
 }) {
   const outcome = checkBetOutcome(entry, results);
+  const [rawPayout, setRawPayout] = useState<string>(
+    entry.payout !== undefined ? String(entry.payout) : '',
+  );
 
   return (
     <View style={styles.entry}>
@@ -91,10 +94,17 @@ function BetEntry({
               keyboardType="decimal-pad"
               placeholder="0.00"
               placeholderTextColor={colors.textDim}
-              value={entry.payout !== undefined ? String(entry.payout) : ''}
-              onChangeText={(v) => {
-                const val = parseFloat(v);
-                onSetPayout(isNaN(val) || v === '' ? undefined : val);
+              value={rawPayout}
+              onChangeText={setRawPayout}
+              onBlur={() => {
+                const val = parseFloat(rawPayout);
+                if (isNaN(val) || rawPayout === '') {
+                  onSetPayout(undefined);
+                  setRawPayout('');
+                } else {
+                  onSetPayout(val);
+                  setRawPayout(String(val));
+                }
               }}
             />
           </View>
