@@ -1,6 +1,6 @@
 {
   "name": "bet-slips-native",
-  "version": "1.7.4",
+  "version": "1.8.0",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",

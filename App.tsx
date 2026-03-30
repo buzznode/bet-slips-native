@@ -41,6 +41,7 @@ import { addToArchive, parseArchive, ARCHIVE_KEY } from './src/lib/archive';
 import Header from './src/components/Header';
 import DataManagementModal from './src/components/DataManagementModal';
 import ArchiveModal from './src/components/ArchiveModal';
+import OnboardingModal from './src/components/OnboardingModal';
 import TrackSelector from './src/components/TrackSelector';
 import BettorSelector from './src/components/BettorSelector';
 import RaceDaySetup from './src/components/RaceDaySetup';
@@ -110,10 +111,15 @@ export default function App() {
   const [horseError, setHorseError] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
 
   // Load persisted state on mount
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
+    Promise.all([
+      AsyncStorage.getItem(STORAGE_KEY),
+      AsyncStorage.getItem('bet-slips-native:onboarded'),
+    ]).then(([raw, onboarded]) => {
+      if (!onboarded) setOnboardingOpen(true);
       if (raw) {
         try {
           const parsed = JSON.parse(raw);
@@ -550,6 +556,11 @@ export default function App() {
         },
       ],
     );
+  }
+
+  function handleDismissOnboarding() {
+    AsyncStorage.setItem('bet-slips-native:onboarded', '1').catch(() => {});
+    setOnboardingOpen(false);
   }
 
   async function handleBackup() {
@@ -1011,6 +1022,11 @@ export default function App() {
       <ArchiveModal
         visible={archiveOpen}
         onClose={() => setArchiveOpen(false)}
+      />
+
+      <OnboardingModal
+        visible={onboardingOpen}
+        onDismiss={handleDismissOnboarding}
       />
     </SafeAreaView>
     </SafeAreaProvider>
