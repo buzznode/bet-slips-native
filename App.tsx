@@ -52,6 +52,7 @@ import RaceOutcome from './src/components/RaceOutcome';
 import BetSummaryModal from './src/components/BetSummaryModal';
 import DaySummaryModal from './src/components/DaySummaryModal';
 import BettorQuickView from './src/components/BettorQuickView';
+import TrackQuickView from './src/components/TrackQuickView';
 import ErrorToast from './src/components/ErrorToast';
 import { colors, spacing, radius, font } from './src/theme';
 
@@ -101,6 +102,7 @@ export default function App() {
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [daySummaryOpen, setDaySummaryOpen] = useState(false);
   const [quickViewBettorId, setQuickViewBettorId] = useState<string | null>(null);
+  const [quickViewTrackId, setQuickViewTrackId] = useState<string | null>(null);
   const [horseError, setHorseError] = useState<string | null>(null);
 
   // Load persisted state on mount
@@ -144,9 +146,7 @@ export default function App() {
   const activeBettorId = activeTrack.activeBettorId;
   const active = bettors.find((b) => b.id === activeBettorId)!;
 
-  const bettorTotals = Object.fromEntries(
-    bettors.map((b) => [b.id, b.history.reduce((s, e) => s + e.totalCost, 0)]),
-  );
+
   const bettorTotal = active.history.reduce((s, e) => s + e.totalCost, 0);
 
   const showOutcomePanel =
@@ -712,8 +712,8 @@ export default function App() {
         <TrackSelector
           tracks={tracks}
           activeTrackId={activeTrackId}
-          trackTotal={Object.values(bettorTotals).reduce((s, v) => s + v, 0)}
           onSelect={(id) => patchState({ activeTrackId: id })}
+          onLongPress={(id) => setQuickViewTrackId(id)}
           onAdd={handleAddTrack}
           onRename={handleRenameTrack}
           onRemove={handleRemoveTrack}
@@ -923,6 +923,16 @@ export default function App() {
           bettor={bettors.find((b) => b.id === quickViewBettorId)!}
           results={activeTrack.results}
           onClose={() => setQuickViewBettorId(null)}
+        />
+      )}
+
+      {quickViewTrackId && (
+        <TrackQuickView
+          track={tracks.find((t) => t.id === quickViewTrackId)!}
+          bettors={tracks.find((t) => t.id === quickViewTrackId)!.bettors}
+          firstRace={active.raceDay.firstRace}
+          lastRace={active.raceDay.lastRace}
+          onClose={() => setQuickViewTrackId(null)}
         />
       )}
 

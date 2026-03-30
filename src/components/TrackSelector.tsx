@@ -17,8 +17,8 @@ function hasResults(track: TrackSession): boolean {
 interface TrackSelectorProps {
   tracks: TrackSession[];
   activeTrackId: string;
-  trackTotal?: number;
   onSelect: (id: string) => void;
+  onLongPress: (id: string) => void;
   onAdd: (name: string) => void;
   onRename: (id: string, name: string) => void;
   onRemove: (id: string) => void;
@@ -27,8 +27,8 @@ interface TrackSelectorProps {
 export default function TrackSelector({
   tracks,
   activeTrackId,
-  trackTotal,
   onSelect,
+  onLongPress,
   onAdd,
   onRename,
   onRemove,
@@ -85,7 +85,10 @@ export default function TrackSelector({
                 />
               ) : (
                 <View style={styles.tabInner}>
-                  <Pressable onPress={() => onSelect(track.id)}>
+                  <Pressable
+                    onPress={() => onSelect(track.id)}
+                    onLongPress={() => onLongPress(track.id)}
+                  >
                     <Text style={[styles.tabName, isActive && styles.tabNameActive]}>
                       {track.name}
                       {hasResults(track) ? ' ✓' : ''}
@@ -136,14 +139,6 @@ export default function TrackSelector({
         )}
       </ScrollView>
 
-      {(trackTotal ?? 0) > 0 && (
-        <View style={styles.trackTotal}>
-          <Text style={styles.trackTotalLabel}>Track Total</Text>
-          <Text style={styles.trackTotalAmount}>
-            ${(trackTotal ?? 0).toFixed(2)}
-          </Text>
-        </View>
-      )}
     </View>
   );
 }
@@ -244,20 +239,5 @@ const styles = StyleSheet.create({
   addBtnText: {
     color: colors.textDim,
     fontSize: font.sm,
-  },
-  trackTotal: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-  },
-  trackTotalLabel: {
-    color: colors.textDim,
-    fontSize: font.sm,
-  },
-  trackTotalAmount: {
-    color: colors.text,
-    fontSize: font.sm,
-    fontWeight: '700',
   },
 });
