@@ -524,7 +524,7 @@ export default function App() {
   }
 
   async function handleBackup() {
-    await exportBackup(state, require('./package.json').version);
+    await exportBackup(state!, require('./package.json').version);
   }
 
   async function handleRestore() {
@@ -973,6 +973,7 @@ export default function App() {
         onClose={() => setSettingsOpen(false)}
         onBackup={handleBackup}
         onRestore={handleRestore}
+        backupSummary={`${state.tracks.length} track${state.tracks.length !== 1 ? 's' : ''}, ${state.tracks.reduce((n, t) => n + t.bettors.length, 0)} bettor${state.tracks.reduce((n, t) => n + t.bettors.length, 0) !== 1 ? 's' : ''}`}
       />
     </SafeAreaView>
     </SafeAreaProvider>

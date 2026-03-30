@@ -14,6 +14,7 @@ interface DataManagementModalProps {
   onClose: () => void;
   onBackup: () => Promise<void>;
   onRestore: () => Promise<void>;
+  backupSummary: string;
 }
 
 type Status = { type: 'success' | 'error'; message: string } | null;
@@ -23,6 +24,7 @@ export default function DataManagementModal({
   onClose,
   onBackup,
   onRestore,
+  backupSummary,
 }: DataManagementModalProps) {
   const [loading, setLoading] = useState<'backup' | 'restore' | null>(null);
   const [status, setStatus] = useState<Status>(null);
@@ -71,6 +73,7 @@ export default function DataManagementModal({
               Export all your tracks, bettors, bets, and templates to a JSON file you can
               save to Files, iCloud, or share via AirDrop.
             </Text>
+            <Text style={styles.sectionSummary}>Current data: {backupSummary}</Text>
             <Pressable
               style={[styles.btn, styles.btnPrimary, loading === 'backup' && styles.btnDisabled]}
               onPress={handleBackup}
@@ -155,6 +158,11 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: font.sm,
     lineHeight: 18,
+  },
+  sectionSummary: {
+    color: colors.textDim,
+    fontSize: font.sm,
+    fontStyle: 'italic',
   },
   divider: {
     height: 1,
