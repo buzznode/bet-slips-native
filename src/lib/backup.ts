@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system';
+import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
 
@@ -33,16 +33,18 @@ export function validateBackupPayload(parsed: unknown): parsed is BackupFile {
 }
 
 export async function exportBackup(state: unknown, version: string): Promise<void> {
+  const available = await Sharing.isAvailableAsync();
+  if (!available) {
+    throw new Error('Sharing is not available in the iOS Simulator. Test backup on a real device.');
+  }
+
   const payload = buildBackupPayload(state, version);
   const date = new Date().toISOString().slice(0, 10);
   const fileName = `bet-slips-backup-${date}.json`;
-  const fileUri = FileSystem.cacheDirectory + fileName;
+  const file = new File(Paths.cache, fileName);
+  file.write(JSON.stringify(payload, null, 2));
 
-  await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(payload, null, 2), {
-    encoding: FileSystem.EncodingType.UTF8,
-  });
-
-  await Sharing.shareAsync(fileUri, {
+  await Sharing.shareAsync(file.uri, {
     mimeType: 'application/json',
     dialogTitle: 'Save Bet Slips Backup',
     UTI: 'public.json',
@@ -57,10 +59,8 @@ export async function importBackup(): Promise<BackupFile | null> {
 
   if (result.canceled || !result.assets?.length) return null;
 
-  const uri = result.assets[0].uri;
-  const raw = await FileSystem.readAsStringAsync(uri, {
-    encoding: FileSystem.EncodingType.UTF8,
-  });
+  const file = new File(result.assets[0].uri);
+  const raw = await file.text();
 
   const parsed = JSON.parse(raw);
   if (!validateBackupPayload(parsed)) {
