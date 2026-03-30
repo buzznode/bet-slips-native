@@ -71,6 +71,11 @@ export default function TrackQuickView({
     raceNumbers.some((r) => b.history.some((e) => e.raceNumber === r)),
   );
 
+  // Width = name chars × 8px + 28px for ✓/✗ + padding, minimum 60px
+  function colWidth(name: string): number {
+    return Math.max(60, name.length * 8 + 28);
+  }
+
   return (
     <Modal
       visible
@@ -106,7 +111,7 @@ export default function TrackQuickView({
               scrollEnabled={activeBettors.length > 0}
             >
               {activeBettors.map((b) => (
-                <Text key={b.id} style={[styles.headerText, styles.bettorHeader]}>
+                <Text key={b.id} style={[styles.headerText, styles.bettorHeader, { width: colWidth(b.name) }]}>
                   {b.name}
                 </Text>
               ))}
@@ -136,7 +141,7 @@ export default function TrackQuickView({
                   {activeBettors.map((b) => {
                     const outcome = bettorOutcome(b, raceNum);
                     return (
-                      <View key={b.id} style={styles.bettorCell}>
+                      <View key={b.id} style={[styles.bettorCell, { width: colWidth(b.name) }]}>
                         {outcome === 'none' && (
                           <Text style={styles.outcomeNone}>—</Text>
                         )}
@@ -163,7 +168,6 @@ export default function TrackQuickView({
 }
 
 const FIXED_LEFT_WIDTH = 140;
-const BETTOR_COL_WIDTH = 110;
 
 const styles = StyleSheet.create({
   backdrop: {
@@ -259,11 +263,9 @@ const styles = StyleSheet.create({
     paddingRight: spacing.lg,
   },
   bettorHeader: {
-    width: BETTOR_COL_WIDTH,
     paddingHorizontal: spacing.sm,
   },
   bettorCell: {
-    width: BETTOR_COL_WIDTH,
     paddingHorizontal: spacing.sm,
     justifyContent: 'center',
   },
