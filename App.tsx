@@ -36,9 +36,11 @@ import {
 } from './src/lib/betting';
 import { summarizeDay, checkBetOutcome } from './src/lib/outcomes';
 import { exportBackup, importBackup } from './src/lib/backup';
+import { addToArchive, parseArchive, ARCHIVE_KEY } from './src/lib/archive';
 
 import Header from './src/components/Header';
 import DataManagementModal from './src/components/DataManagementModal';
+import ArchiveModal from './src/components/ArchiveModal';
 import TrackSelector from './src/components/TrackSelector';
 import BettorSelector from './src/components/BettorSelector';
 import RaceDaySetup from './src/components/RaceDaySetup';
@@ -107,6 +109,7 @@ export default function App() {
   const [quickViewTrackId, setQuickViewTrackId] = useState<string | null>(null);
   const [horseError, setHorseError] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [archiveOpen, setArchiveOpen] = useState(false);
 
   // Load persisted state on mount
   useEffect(() => {
@@ -515,14 +518,31 @@ export default function App() {
   }
 
   function handleResetApp() {
+    const hasBets = state!.tracks.some((t) =>
+      t.bettors.some((b) => b.history.length > 0),
+    );
     Alert.alert(
       'Reset Everything?',
-      'This will clear all tracks, bettors, and bet history. This cannot be undone.',
+      hasBets
+        ? 'Save today\'s race day to the archive before resetting, or reset without saving.'
+        : 'This will clear all tracks, bettors, and bet history. This cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
+        ...(hasBets
+          ? [{
+              text: 'Save & Reset',
+              onPress: async () => {
+                const existing = parseArchive(await AsyncStorage.getItem(ARCHIVE_KEY));
+                const updated = addToArchive(existing, state!.tracks);
+                await AsyncStorage.setItem(ARCHIVE_KEY, JSON.stringify(updated));
+                AsyncStorage.removeItem(STORAGE_KEY);
+                setState(buildDefaultState());
+              },
+            }]
+          : []),
         {
-          text: 'Reset',
-          style: 'destructive',
+          text: hasBets ? 'Reset Without Saving' : 'Reset',
+          style: 'destructive' as const,
           onPress: () => {
             AsyncStorage.removeItem(STORAGE_KEY);
             setState(buildDefaultState());
@@ -983,7 +1003,13 @@ export default function App() {
         onClose={() => setSettingsOpen(false)}
         onBackup={handleBackup}
         onRestore={handleRestore}
+        onViewArchive={() => { setSettingsOpen(false); setArchiveOpen(true); }}
         backupSummary={`${state.tracks.length} track${state.tracks.length !== 1 ? 's' : ''}, ${state.tracks.reduce((n, t) => n + t.bettors.length, 0)} bettor${state.tracks.reduce((n, t) => n + t.bettors.length, 0) !== 1 ? 's' : ''}`}
+      />
+
+      <ArchiveModal
+        visible={archiveOpen}
+        onClose={() => setArchiveOpen(false)}
       />
     </SafeAreaView>
     </SafeAreaProvider>

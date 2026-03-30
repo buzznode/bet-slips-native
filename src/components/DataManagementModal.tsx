@@ -14,6 +14,7 @@ interface DataManagementModalProps {
   onClose: () => void;
   onBackup: () => Promise<void>;
   onRestore: () => Promise<void>;
+  onViewArchive: () => void;
   backupSummary: string;
 }
 
@@ -24,6 +25,7 @@ export default function DataManagementModal({
   onClose,
   onBackup,
   onRestore,
+  onViewArchive,
   backupSummary,
 }: DataManagementModalProps) {
   const [loading, setLoading] = useState<'backup' | 'restore' | null>(null);
@@ -113,6 +115,10 @@ export default function DataManagementModal({
               <Text style={styles.statusText}>{status.message}</Text>
             </View>
           )}
+
+          <Pressable style={styles.archiveBtn} onPress={onViewArchive}>
+            <Text style={styles.archiveBtnText}>📅 View Race Day Archive</Text>
+          </Pressable>
 
           <Pressable style={styles.closeBtn} onPress={handleClose}>
             <Text style={styles.closeBtnText}>Close</Text>
@@ -206,8 +212,21 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: font.sm,
   },
-  closeBtn: {
+  archiveBtn: {
     marginTop: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  archiveBtnText: {
+    color: colors.textMuted,
+    fontSize: font.md,
+    fontWeight: '600',
+  },
+  closeBtn: {
+    marginTop: spacing.sm,
     paddingVertical: spacing.md,
     borderRadius: radius.md,
     alignItems: 'center',
