@@ -142,7 +142,7 @@ export default function BettorQuickView({ bettor, results, onClose }: BettorQuic
         {/* Per-race table */}
         {races.length > 0 && (
           <ScrollView
-            style={styles.tableScroll}
+            style={{ height: Math.min(races.length, 5) * 33 + 52 }}
             contentContainerStyle={styles.table}
           >
             <View style={styles.tableHeader}>
@@ -199,7 +199,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopLeftRadius: radius.lg,
     borderTopRightRadius: radius.lg,
-    minHeight: '60%',
     maxHeight: '90%',
   },
   handle: {
@@ -311,9 +310,7 @@ const styles = StyleSheet.create({
   budgetFillOver: {
     backgroundColor: colors.danger,
   },
-  tableScroll: {
-    flex: 1,
-  },
+  tableScroll: {},
   table: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
