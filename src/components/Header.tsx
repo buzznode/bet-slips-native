@@ -6,18 +6,24 @@ const version = require('../../package.json').version;
 
 interface HeaderProps {
   onReset: () => void;
+  onSettings: () => void;
 }
 
-export default function Header({ onReset }: HeaderProps) {
+export default function Header({ onReset, onSettings }: HeaderProps) {
   return (
     <View style={styles.header}>
       <View style={styles.left}>
         <Text style={styles.title}>🏇 Bet Slips</Text>
         <Text style={styles.version}>v{version}</Text>
       </View>
-      <Pressable style={styles.resetBtn} onPress={onReset}>
-        <Text style={styles.resetText}>✕ Reset</Text>
-      </Pressable>
+      <View style={styles.right}>
+        <Pressable style={styles.settingsBtn} onPress={onSettings}>
+          <Text style={styles.settingsText}>⚙</Text>
+        </Pressable>
+        <Pressable style={styles.resetBtn} onPress={onReset}>
+          <Text style={styles.resetText}>✕ Reset</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -38,6 +44,11 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
     gap: spacing.sm,
   },
+  right: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   title: {
     color: colors.text,
     fontSize: font.xl,
@@ -47,6 +58,17 @@ const styles = StyleSheet.create({
   version: {
     color: colors.textDim,
     fontSize: font.sm,
+  },
+  settingsBtn: {
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: spacing.xs + 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  settingsText: {
+    color: colors.textMuted,
+    fontSize: font.md,
   },
   resetBtn: {
     paddingHorizontal: spacing.md,

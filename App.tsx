@@ -35,8 +35,10 @@ import {
   getMinHorses,
 } from './src/lib/betting';
 import { summarizeDay } from './src/lib/outcomes';
+import { exportBackup, importBackup } from './src/lib/backup';
 
 import Header from './src/components/Header';
+import DataManagementModal from './src/components/DataManagementModal';
 import TrackSelector from './src/components/TrackSelector';
 import BettorSelector from './src/components/BettorSelector';
 import RaceDaySetup from './src/components/RaceDaySetup';
@@ -104,6 +106,7 @@ export default function App() {
   const [quickViewBettorId, setQuickViewBettorId] = useState<string | null>(null);
   const [quickViewTrackId, setQuickViewTrackId] = useState<string | null>(null);
   const [horseError, setHorseError] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Load persisted state on mount
   useEffect(() => {
@@ -520,6 +523,36 @@ export default function App() {
     );
   }
 
+  async function handleBackup() {
+    await exportBackup(state, require('./package.json').version);
+  }
+
+  async function handleRestore() {
+    const backup = await importBackup();
+    if (!backup) return;
+    Alert.alert(
+      'Restore Backup?',
+      'This will replace all current data with the backup. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Restore',
+          style: 'destructive',
+          onPress: () => {
+            const migrated = migrateState(backup.state as Parameters<typeof migrateState>[0]);
+            const restored: AppState = {
+              ...migrated,
+              templates: (backup.state as AppState).templates ?? [],
+            };
+            AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(restored)).catch(() => {});
+            setState(restored);
+            setSettingsOpen(false);
+          },
+        },
+      ],
+    );
+  }
+
   function handleReset() {
     updateActive({
       selectedBetType: null,
@@ -693,7 +726,7 @@ export default function App() {
     <SafeAreaProvider>
     <SafeAreaView style={styles.root}>
       <StatusBar barStyle="light-content" backgroundColor={colors.bg} />
-      <Header onReset={handleResetApp} />
+      <Header onReset={handleResetApp} onSettings={() => setSettingsOpen(true)} />
 
       <ScrollView
         style={styles.scroll}
@@ -931,6 +964,13 @@ export default function App() {
           onDismiss={() => setHorseError(null)}
         />
       )}
+
+      <DataManagementModal
+        visible={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        onBackup={handleBackup}
+        onRestore={handleRestore}
+      />
     </SafeAreaView>
     </SafeAreaProvider>
   );
