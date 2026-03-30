@@ -1016,6 +1016,7 @@ export default function App() {
         onBackup={handleBackup}
         onRestore={handleRestore}
         onViewArchive={() => { setSettingsOpen(false); setArchiveOpen(true); }}
+        onViewGuide={() => { setSettingsOpen(false); setOnboardingOpen(true); }}
         backupSummary={`${state.tracks.length} track${state.tracks.length !== 1 ? 's' : ''}, ${state.tracks.reduce((n, t) => n + t.bettors.length, 0)} bettor${state.tracks.reduce((n, t) => n + t.bettors.length, 0) !== 1 ? 's' : ''}`}
       />
 

@@ -15,6 +15,7 @@ interface DataManagementModalProps {
   onBackup: () => Promise<void>;
   onRestore: () => Promise<void>;
   onViewArchive: () => void;
+  onViewGuide: () => void;
   backupSummary: string;
 }
 
@@ -26,6 +27,7 @@ export default function DataManagementModal({
   onBackup,
   onRestore,
   onViewArchive,
+  onViewGuide,
   backupSummary,
 }: DataManagementModalProps) {
   const [loading, setLoading] = useState<'backup' | 'restore' | null>(null);
@@ -118,6 +120,10 @@ export default function DataManagementModal({
 
           <Pressable style={styles.archiveBtn} onPress={onViewArchive}>
             <Text style={styles.archiveBtnText}>📅 View Race Day Archive</Text>
+          </Pressable>
+
+          <Pressable style={styles.archiveBtn} onPress={onViewGuide}>
+            <Text style={styles.archiveBtnText}>📖 App Guide</Text>
           </Pressable>
 
           <Pressable style={styles.closeBtn} onPress={handleClose}>
