@@ -530,19 +530,22 @@ export default function App() {
   async function handleRestore() {
     const backup = await importBackup();
     if (!backup) return;
+    const backupState = backup.state as AppState;
+    const trackCount = backupState.tracks?.length ?? 0;
+    const bettorCount = backupState.tracks?.reduce((n, t) => n + (t.bettors?.length ?? 0), 0) ?? 0;
     Alert.alert(
       'Restore Backup?',
-      'This will replace all current data with the backup. This cannot be undone.',
+      `Found ${trackCount} track${trackCount !== 1 ? 's' : ''} and ${bettorCount} bettor${bettorCount !== 1 ? 's' : ''} (exported ${backup.exportedAt.slice(0, 10)}).\n\nThis will replace all current data. This cannot be undone.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Restore',
           style: 'destructive',
           onPress: () => {
-            const migrated = migrateState(backup.state as Parameters<typeof migrateState>[0]);
+            const migrated = migrateState(backupState as Parameters<typeof migrateState>[0]);
             const restored: AppState = {
               ...migrated,
-              templates: (backup.state as AppState).templates ?? [],
+              templates: backupState.templates ?? [],
             };
             AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(restored)).catch(() => {});
             setState(restored);
