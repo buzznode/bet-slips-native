@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopLeftRadius: radius.lg,
     borderTopRightRadius: radius.lg,
-    maxHeight: '70%',
+    maxHeight: '90%',
   },
   handle: {
     width: 36,
