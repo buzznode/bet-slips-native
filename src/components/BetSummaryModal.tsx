@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { BettorState, BetResult } from '../types';
 import { colors, spacing, radius, font } from '../theme';
+import { shareSlip } from '../lib/share';
 
 interface BetSummaryModalProps {
   trackName: string;
@@ -63,9 +64,17 @@ export default function BetSummaryModal({
             <Text style={styles.trackName}>{trackName}</Text>
             <Text style={styles.raceName}>Race {raceNumber}</Text>
           </View>
-          <Pressable style={styles.closeBtn} onPress={onClose}>
-            <Text style={styles.closeBtnText}>✕</Text>
-          </Pressable>
+          <View style={styles.headerActions}>
+            <Pressable
+              style={styles.shareBtn}
+              onPress={() => shareSlip(trackName, raceNumber, bettors)}
+            >
+              <Text style={styles.shareBtnText}>⬆ Share</Text>
+            </Pressable>
+            <Pressable style={styles.closeBtn} onPress={onClose}>
+              <Text style={styles.closeBtnText}>✕</Text>
+            </Pressable>
+          </View>
         </View>
 
         <ScrollView contentContainerStyle={styles.body}>
@@ -136,6 +145,23 @@ const styles = StyleSheet.create({
     fontSize: font.xl,
     fontWeight: '700',
     marginTop: spacing.xs,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  shareBtn: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  shareBtnText: {
+    color: colors.primaryLight,
+    fontSize: font.sm,
+    fontWeight: '600',
   },
   closeBtn: {
     width: 32,
