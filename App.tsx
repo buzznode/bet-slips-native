@@ -771,6 +771,7 @@ export default function App() {
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
       >
         <TrackSelector
           tracks={tracks}
