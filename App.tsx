@@ -189,6 +189,17 @@ export default function App() {
     return false;
   })();
 
+  const lastRaceComplete = (() => {
+    const { lastRace } = active.raceDay;
+    const res = activeTrack.results[lastRace];
+    return (
+      res?.first != null &&
+      res?.second != null &&
+      res?.third != null &&
+      (!superfectaRaces.has(lastRace) || res?.fourth != null)
+    );
+  })();
+
   const isMultiRace =
     BET_TYPES.find((b) => b.id === active.selectedBetType)?.category ===
     'multi-race';
@@ -976,7 +987,7 @@ export default function App() {
           />
         )}
 
-        {anyRaceComplete && bettors.some((b) => b.history.length > 0) && (
+        {lastRaceComplete && bettors.some((b) => b.history.length > 0) && (
           <View style={styles.daySummaryRow}>
             <Pressable
               style={styles.daySummaryBtn}
