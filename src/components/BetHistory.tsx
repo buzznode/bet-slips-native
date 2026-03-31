@@ -1,7 +1,5 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import {
-  Animated,
-  PanResponder,
   View,
   Text,
   Pressable,
@@ -53,8 +51,6 @@ function formatLabel(result: BetResult): string {
   return result.betType;
 }
 
-const SWIPE_THRESHOLD = -80;
-
 function BetEntry({
   entry,
   results,
@@ -78,48 +74,8 @@ function BetEntry({
   const [noteEditing, setNoteEditing] = useState(false);
   const [rawNote, setRawNote] = useState(entry.note ?? '');
 
-  const translateX = useRef(new Animated.Value(0)).current;
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_evt, gestureState) =>
-        !locked && Math.abs(gestureState.dx) > 8 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy),
-      onPanResponderGrant: () => {
-        translateX.stopAnimation();
-      },
-      onPanResponderMove: (_evt, gestureState) => {
-        if (gestureState.dx < 0) {
-          translateX.setValue(gestureState.dx);
-        }
-      },
-      onPanResponderRelease: (_evt, gestureState) => {
-        if (gestureState.dx < SWIPE_THRESHOLD) {
-          Animated.timing(translateX, {
-            toValue: -500,
-            duration: 200,
-            useNativeDriver: true,
-          }).start(() => {
-            haptic.medium();
-            onRemove();
-          });
-        } else {
-          Animated.spring(translateX, {
-            toValue: 0,
-            useNativeDriver: true,
-          }).start();
-        }
-      },
-    }),
-  ).current;
-
   return (
-    <View style={styles.entryContainer}>
-      {!locked && (
-        <View style={styles.deleteBackground}>
-          <Text style={styles.deleteText}>Delete</Text>
-        </View>
-      )}
-    <Animated.View style={[styles.entry, { transform: [{ translateX }] }]} {...panResponder.panHandlers}>
+    <View style={styles.entry}>
       <View style={styles.entryMain}>
         <Text style={styles.entryLabel}>{formatLabel(entry)}</Text>
         <View style={styles.entryRight}>
@@ -194,7 +150,6 @@ function BetEntry({
           <Text style={styles.noteToggleText}>+ note</Text>
         </Pressable>
       )}
-    </Animated.View>
     </View>
   );
 }
@@ -407,31 +362,11 @@ const styles = StyleSheet.create({
     fontSize: font.sm,
     fontWeight: '600',
   },
-  entryContainer: {
-    overflow: 'hidden',
-  },
-  deleteBackground: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: colors.danger,
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    paddingRight: spacing.lg,
-  },
-  deleteText: {
-    color: '#fff',
-    fontSize: font.sm,
-    fontWeight: '700',
-  },
   entry: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    backgroundColor: colors.surface,
   },
   entryMain: {
     flexDirection: 'row',
