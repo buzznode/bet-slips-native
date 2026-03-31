@@ -114,7 +114,9 @@ export default function RaceDaySetup({
               disabled={configLocked}
               onChange={(first) => {
                 const last = Math.max(first + 1, raceDay.lastRace);
-                const current = Math.max(first, Math.min(raceDay.currentRace, last));
+                const current = (raceDay.currentRace >= first && raceDay.currentRace <= last)
+                  ? raceDay.currentRace
+                  : first;
                 update({ firstRace: first, lastRace: last, currentRace: current });
               }}
             />
@@ -126,7 +128,9 @@ export default function RaceDaySetup({
               disabled={configLocked}
               onChange={(last) => {
                 const first = Math.min(raceDay.firstRace, last - 1);
-                const current = Math.max(first, Math.min(raceDay.currentRace, last));
+                const current = (raceDay.currentRace >= first && raceDay.currentRace <= last)
+                  ? raceDay.currentRace
+                  : first;
                 update({ firstRace: first, lastRace: last, currentRace: current });
               }}
             />
