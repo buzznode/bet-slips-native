@@ -71,7 +71,7 @@ function BetEntry({
   const [rawPayout, setRawPayout] = useState<string>(
     entry.payout !== undefined ? String(entry.payout) : '',
   );
-  const [noteOpen, setNoteOpen] = useState(!!entry.note);
+  const [noteEditing, setNoteEditing] = useState(false);
   const [rawNote, setRawNote] = useState(entry.note ?? '');
 
   return (
@@ -125,19 +125,28 @@ function BetEntry({
         )}
       </View>
 
-      {noteOpen ? (
+      {noteEditing ? (
         <TextInput
           style={styles.noteInput}
           placeholder="Add a note…"
           placeholderTextColor={colors.textDim}
           value={rawNote}
           onChangeText={setRawNote}
-          onBlur={() => onSetNote(rawNote.trim())}
+          onBlur={() => {
+            const trimmed = rawNote.trim();
+            setRawNote(trimmed);
+            setNoteEditing(false);
+            onSetNote(trimmed);
+          }}
           multiline
-          autoFocus={!entry.note}
+          autoFocus
         />
+      ) : rawNote ? (
+        <Pressable onPress={() => setNoteEditing(true)} style={styles.noteToggle}>
+          <Text style={styles.noteText}>{rawNote}</Text>
+        </Pressable>
       ) : (
-        <Pressable onPress={() => setNoteOpen(true)} style={styles.noteToggle}>
+        <Pressable onPress={() => setNoteEditing(true)} style={styles.noteToggle}>
           <Text style={styles.noteToggleText}>+ note</Text>
         </Pressable>
       )}
@@ -443,6 +452,11 @@ const styles = StyleSheet.create({
   noteToggleText: {
     color: colors.textDim,
     fontSize: font.sm,
+  },
+  noteText: {
+    color: colors.textMuted,
+    fontSize: font.sm,
+    fontStyle: 'italic',
   },
   noteInput: {
     marginTop: spacing.xs,
