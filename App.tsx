@@ -600,16 +600,6 @@ export default function App() {
     );
   }
 
-  function handleReset() {
-    updateActive({
-      selectedBetType: null,
-      selectedModifier: null,
-      selectedHorses: [],
-      selectedLegs: [],
-      result: null,
-    });
-  }
-
   function handleToggleHorse(horse: number) {
     const isDeselecting = active.selectedHorses.includes(horse);
     if (
@@ -898,9 +888,8 @@ export default function App() {
         />
 
         <CalculateButton
-          onClick={active.result ? handleReset : handleCalculate}
-          disabled={!active.result && !canCalculate}
-          variant={active.result ? 'reset' : 'calculate'}
+          onClick={handleCalculate}
+          disabled={!canCalculate}
           pendingCost={pendingCost}
         />
 
