@@ -1,4 +1,5 @@
 import React from 'react';
+import { Alert } from 'react-native';
 import { render, fireEvent } from '@testing-library/react-native';
 import RaceOutcome from '../components/RaceOutcome';
 import BetHistory from '../components/BetHistory';
@@ -110,13 +111,18 @@ describe('BetHistory', () => {
     expect(queryByText('Clear All')).toBeNull();
   });
 
-  it('calls onClearAll when Clear All is pressed', () => {
+  it('calls onClearAll when Clear All is confirmed', () => {
     const onClearAll = jest.fn();
+    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
+      const confirm = buttons?.find((b) => b.style === 'destructive');
+      confirm?.onPress?.();
+    });
     const { getByText } = render(
       <BetHistory {...defaultProps} onClearAll={onClearAll} />,
     );
     fireEvent.press(getByText('Clear All'));
     expect(onClearAll).toHaveBeenCalledTimes(1);
+    jest.restoreAllMocks();
   });
 
   it('calls onRemove when trash is pressed', () => {

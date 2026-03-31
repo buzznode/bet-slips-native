@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import type { BetTemplate, ModifierId } from '../types';
 import { colors, spacing, radius, font } from '../theme';
@@ -36,16 +36,32 @@ export default function BetTemplates({
         t.betUnit === currentBetUnit,
     );
 
+  const containerWidth = useRef(0);
+  const [showHint, setShowHint] = useState(false);
+
   if (mode === 'apply') {
     if (templates.length === 0) return null;
+    const sorted = [...templates].sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }),
+    );
     return (
       <View style={styles.container}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.chips}
+          onLayout={(e) => { containerWidth.current = e.nativeEvent.layout.width; }}
+          onContentSizeChange={(contentW) => {
+            setShowHint(contentW > containerWidth.current);
+          }}
+          onScroll={(e) => {
+            const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+            const atEnd = contentOffset.x + layoutMeasurement.width >= contentSize.width - 4;
+            setShowHint(!atEnd && contentSize.width > layoutMeasurement.width);
+          }}
+          scrollEventThrottle={16}
         >
-          {templates.map((t) => (
+          {sorted.map((t) => (
             <View key={t.id} style={styles.chip}>
               <Pressable
                 style={styles.chipLabel}
@@ -62,6 +78,11 @@ export default function BetTemplates({
             </View>
           ))}
         </ScrollView>
+        {showHint && (
+          <View style={styles.scrollHint} pointerEvents="none">
+            <Text style={styles.scrollHintText}>›</Text>
+          </View>
+        )}
       </View>
     );
   }
@@ -81,6 +102,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     paddingVertical: spacing.sm,
+    overflow: 'hidden',
   },
   chips: {
     flexDirection: 'row',
@@ -114,6 +136,22 @@ const styles = StyleSheet.create({
   chipRemoveText: {
     color: colors.textMuted,
     fontSize: 11,
+  },
+  scrollHint: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    opacity: 0.85,
+  },
+  scrollHintText: {
+    color: colors.textMuted,
+    fontSize: 20,
+    fontWeight: '300',
   },
   saveContainer: {
     paddingHorizontal: spacing.lg,

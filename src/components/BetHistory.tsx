@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  Alert,
   View,
   Text,
   Pressable,
@@ -236,7 +237,12 @@ export default function BetHistory({
 
           {!locked && (
             <View style={styles.actions}>
-              <Pressable onPress={() => { haptic.heavy(); onClearAll(); }}>
+              <Pressable onPress={() => {
+                Alert.alert('Clear All Bets', 'Remove all bets for this race?', [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Clear All', style: 'destructive', onPress: () => { haptic.heavy(); onClearAll(); } },
+                ]);
+              }}>
                 <Text style={styles.clearAll}>Clear All</Text>
               </Pressable>
             </View>
