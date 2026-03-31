@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Modal,
   View,
@@ -19,17 +19,32 @@ const SCREENS = [
   {
     emoji: '🏇',
     title: 'Welcome to Bet Slips',
-    body: 'Track your horse racing bets across multiple tracks and bettors. Calculate combinations, record results, and see who came out ahead at the end of the day.',
+    body: 'Your personal horse racing bet tracker. Calculate combinations, follow the action across multiple races and tracks, and see exactly where you stand at the end of the day.',
+  },
+  {
+    emoji: '🏟️',
+    title: 'Set Up Your Day',
+    body: 'Tap "+ Add Track" to name the track you\'re at. Tap "+ Add" under Bettor to add yourself or anyone else who\'s betting. Rename them anything you like — "Brad", "Karen", "Me".',
+  },
+  {
+    emoji: '🎰',
+    title: 'Placing a Bet',
+    body: 'Pick a bet type (Win, Exacta, Pick 3…), choose your modifier (Box, Wheel, Key Horse…), select your horses, then tap "Add Bet". The app calculates combinations and cost for you.',
   },
   {
     emoji: '👆',
-    title: 'Long-Press to Explore',
-    body: 'Long-press any track or bettor name to see a quick summary of their bets and stats. It\'s the fastest way to check how everyone is doing mid-race day.',
+    title: 'Long-Press for Quick Stats',
+    body: 'Long-press any track or bettor name to see a snapshot of their bets, wins, losses, and spend. Handy for checking how everyone\'s doing without leaving the main screen.',
+  },
+  {
+    emoji: '✅',
+    title: 'Results & Payouts',
+    body: 'After each race, scroll down to Race Results and enter the finishing order. Winning bets are highlighted automatically. Tap the payout field on any winner to record what you collected.',
   },
   {
     emoji: '🏁',
-    title: 'The Race Day Flow',
-    body: 'Set up your races → place bets → enter results after each race → collect payouts. When the day is done, hit Reset and choose "Save & Reset" to archive it.',
+    title: 'End of Day',
+    body: 'Tap "Final Summary" to see the full day breakdown. When you\'re done, hit Reset to clear the day and start fresh.',
   },
 ];
 
@@ -37,6 +52,10 @@ export default function OnboardingModal({ visible, onDismiss }: OnboardingModalP
   const [index, setIndex] = useState(0);
   const isLast = index === SCREENS.length - 1;
   const screen = SCREENS[index];
+
+  useEffect(() => {
+    if (visible) setIndex(0);
+  }, [visible]);
 
   function handleNext() {
     if (isLast) {
