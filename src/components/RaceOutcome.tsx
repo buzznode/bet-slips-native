@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import type { RaceResult } from '../types';
 import { colors, spacing, radius, font } from '../theme';
@@ -15,6 +15,37 @@ interface RaceOutcomeProps {
   results: Record<number, RaceResult>;
   superfectaRaces: Set<number>;
   onChange: (results: Record<number, RaceResult>) => void;
+}
+
+function HorseScrollRow({ children }: { children: React.ReactNode }) {
+  const containerWidth = useRef(0);
+  const [showHint, setShowHint] = useState(false);
+  return (
+    <View style={styles.horseScrollWrap}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.horsesRow}
+        onLayout={(e) => { containerWidth.current = e.nativeEvent.layout.width; }}
+        onContentSizeChange={(contentW) => {
+          setShowHint(contentW > containerWidth.current);
+        }}
+        onScroll={(e) => {
+          const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+          const atEnd = contentOffset.x + layoutMeasurement.width >= contentSize.width - 4;
+          setShowHint(!atEnd && contentSize.width > layoutMeasurement.width);
+        }}
+        scrollEventThrottle={16}
+      >
+        {children}
+      </ScrollView>
+      {showHint && (
+        <View style={styles.horseScrollHint} pointerEvents="none">
+          <Text style={styles.horseScrollHintText}>›</Text>
+        </View>
+      )}
+    </View>
+  );
 }
 
 export default function RaceOutcome({
@@ -160,11 +191,7 @@ export default function RaceOutcome({
             return (
               <View key={pos} style={styles.posRow}>
                 <Text style={styles.posLabel}>{posLabel}</Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.horsesRow}
-                >
+                <HorseScrollRow>
                   {horses.map((h) => {
                     const isSelected = currentVal === h;
                     const isTaken = taken.includes(h);
@@ -194,7 +221,7 @@ export default function RaceOutcome({
                       </Pressable>
                     );
                   })}
-                </ScrollView>
+                </HorseScrollRow>
               </View>
             );
           })}
@@ -309,9 +336,29 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     width: 28,
   },
+  horseScrollWrap: {
+    flex: 1,
+    overflow: 'hidden',
+  },
   horsesRow: {
     flexDirection: 'row',
     gap: spacing.xs,
+  },
+  horseScrollHint: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    opacity: 0.85,
+  },
+  horseScrollHintText: {
+    color: colors.textMuted,
+    fontSize: 20,
+    fontWeight: '300',
   },
   horseBtn: {
     width: HORSE_SIZE,
