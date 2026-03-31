@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
+  Animated,
+  PanResponder,
   View,
   Text,
   Pressable,
@@ -51,6 +53,8 @@ function formatLabel(result: BetResult): string {
   return result.betType;
 }
 
+const SWIPE_THRESHOLD = -80;
+
 function BetEntry({
   entry,
   results,
@@ -74,8 +78,39 @@ function BetEntry({
   const [noteEditing, setNoteEditing] = useState(false);
   const [rawNote, setRawNote] = useState(entry.note ?? '');
 
+  const translateX = useRef(new Animated.Value(0)).current;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_evt, gestureState) =>
+        !locked && Math.abs(gestureState.dx) > 8 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy),
+      onPanResponderMove: (_evt, gestureState) => {
+        if (gestureState.dx < 0) {
+          translateX.setValue(gestureState.dx);
+        }
+      },
+      onPanResponderRelease: (_evt, gestureState) => {
+        if (gestureState.dx < SWIPE_THRESHOLD) {
+          Animated.timing(translateX, {
+            toValue: -500,
+            duration: 200,
+            useNativeDriver: true,
+          }).start(() => {
+            haptic.medium();
+            onRemove();
+          });
+        } else {
+          Animated.spring(translateX, {
+            toValue: 0,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+    }),
+  ).current;
+
   return (
-    <View style={styles.entry}>
+    <Animated.View style={[styles.entry, { transform: [{ translateX }] }]} {...panResponder.panHandlers}>
       <View style={styles.entryMain}>
         <Text style={styles.entryLabel}>{formatLabel(entry)}</Text>
         <View style={styles.entryRight}>
@@ -150,7 +185,7 @@ function BetEntry({
           <Text style={styles.noteToggleText}>+ note</Text>
         </Pressable>
       )}
-    </View>
+    </Animated.View>
   );
 }
 
