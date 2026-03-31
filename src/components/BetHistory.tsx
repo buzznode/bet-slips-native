@@ -84,6 +84,9 @@ function BetEntry({
     PanResponder.create({
       onMoveShouldSetPanResponder: (_evt, gestureState) =>
         !locked && Math.abs(gestureState.dx) > 8 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy),
+      onPanResponderGrant: () => {
+        translateX.stopAnimation();
+      },
       onPanResponderMove: (_evt, gestureState) => {
         if (gestureState.dx < 0) {
           translateX.setValue(gestureState.dx);
@@ -110,6 +113,12 @@ function BetEntry({
   ).current;
 
   return (
+    <View style={styles.entryContainer}>
+      {!locked && (
+        <View style={styles.deleteBackground}>
+          <Text style={styles.deleteText}>Delete</Text>
+        </View>
+      )}
     <Animated.View style={[styles.entry, { transform: [{ translateX }] }]} {...panResponder.panHandlers}>
       <View style={styles.entryMain}>
         <Text style={styles.entryLabel}>{formatLabel(entry)}</Text>
@@ -186,6 +195,7 @@ function BetEntry({
         </Pressable>
       )}
     </Animated.View>
+    </View>
   );
 }
 
@@ -397,11 +407,31 @@ const styles = StyleSheet.create({
     fontSize: font.sm,
     fontWeight: '600',
   },
+  entryContainer: {
+    overflow: 'hidden',
+  },
+  deleteBackground: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: colors.danger,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    paddingRight: spacing.lg,
+  },
+  deleteText: {
+    color: '#fff',
+    fontSize: font.sm,
+    fontWeight: '700',
+  },
   entry: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+    backgroundColor: colors.surface,
   },
   entryMain: {
     flexDirection: 'row',
