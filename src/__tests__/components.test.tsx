@@ -84,6 +84,7 @@ describe('BetHistory', () => {
     onRemove: jest.fn(),
     onClearAll: jest.fn(),
     onSetPayout: jest.fn(),
+    onSetNote: jest.fn(),
   };
 
   it('renders nothing when history is empty', () => {

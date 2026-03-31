@@ -71,6 +71,7 @@ export interface BetResult {
   combinationList: number[][];
   raceNumber?: number;
   payout?: number;
+  note?: string;
 }
 
 export interface BettorState {

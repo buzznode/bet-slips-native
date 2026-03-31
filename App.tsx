@@ -934,6 +934,13 @@ export default function App() {
               ),
             })
           }
+          onSetNote={(originalIndex, note) =>
+            updateActive({
+              history: active.history.map((e, idx) =>
+                idx === originalIndex ? { ...e, note: note || undefined } : e,
+              ),
+            })
+          }
         />
 
         {showOutcomePanel && (

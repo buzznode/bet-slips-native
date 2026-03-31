@@ -30,6 +30,7 @@ interface BetHistoryProps {
   onRemove: (originalIndex: number) => void;
   onClearAll: () => void;
   onSetPayout: (originalIndex: number, payout: number | undefined) => void;
+  onSetNote: (originalIndex: number, note: string) => void;
 }
 
 const KEY_MODIFIERS_DISPLAY = ['Key Horse', 'Wheel', 'Part Wheel'];
@@ -52,11 +53,11 @@ function formatLabel(result: BetResult): string {
 
 function BetEntry({
   entry,
-  originalIndex,
   results,
   locked,
   onRemove,
   onSetPayout,
+  onSetNote,
 }: {
   entry: BetResult;
   originalIndex: number;
@@ -64,11 +65,14 @@ function BetEntry({
   locked: boolean;
   onRemove: () => void;
   onSetPayout: (payout: number | undefined) => void;
+  onSetNote: (note: string) => void;
 }) {
   const outcome = checkBetOutcome(entry, results);
   const [rawPayout, setRawPayout] = useState<string>(
     entry.payout !== undefined ? String(entry.payout) : '',
   );
+  const [noteOpen, setNoteOpen] = useState(!!entry.note);
+  const [rawNote, setRawNote] = useState(entry.note ?? '');
 
   return (
     <View style={styles.entry}>
@@ -120,6 +124,23 @@ function BetEntry({
           </Pressable>
         )}
       </View>
+
+      {noteOpen ? (
+        <TextInput
+          style={styles.noteInput}
+          placeholder="Add a note…"
+          placeholderTextColor={colors.textDim}
+          value={rawNote}
+          onChangeText={setRawNote}
+          onBlur={() => onSetNote(rawNote.trim())}
+          multiline
+          autoFocus={!entry.note}
+        />
+      ) : (
+        <Pressable onPress={() => setNoteOpen(true)} style={styles.noteToggle}>
+          <Text style={styles.noteToggleText}>+ note</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -136,6 +157,7 @@ export default function BetHistory({
   onRemove,
   onClearAll,
   onSetPayout,
+  onSetNote,
 }: BetHistoryProps) {
   const [open, setOpen] = useState(true);
 
@@ -220,6 +242,7 @@ export default function BetHistory({
               locked={locked}
               onRemove={() => onRemove(originalIndex)}
               onSetPayout={(payout) => onSetPayout(originalIndex, payout)}
+              onSetNote={(note) => onSetNote(originalIndex, note)}
             />
           ))}
         </View>
@@ -412,5 +435,25 @@ const styles = StyleSheet.create({
   },
   removeBtnText: {
     fontSize: 16,
+  },
+  noteToggle: {
+    marginTop: spacing.xs,
+    alignSelf: 'flex-start',
+  },
+  noteToggleText: {
+    color: colors.textDim,
+    fontSize: font.sm,
+  },
+  noteInput: {
+    marginTop: spacing.xs,
+    color: colors.text,
+    fontSize: font.sm,
+    backgroundColor: colors.surfaceHigh,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    minHeight: 36,
   },
 });
