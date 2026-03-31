@@ -52,6 +52,8 @@ function formatLabel(result: BetResult): string {
   return result.betType;
 }
 
+const MAX_COMBOS = 100;
+
 function BetEntry({
   entry,
   results,
@@ -74,10 +76,22 @@ function BetEntry({
   );
   const [noteEditing, setNoteEditing] = useState(false);
   const [rawNote, setRawNote] = useState(entry.note ?? '');
+  const [combosOpen, setCombosOpen] = useState(false);
+
+  const hasCombos = entry.combinationList && entry.combinationList.length > 0;
+  const displayCombos = hasCombos ? entry.combinationList.slice(0, MAX_COMBOS) : [];
+  const comboOverflow = hasCombos ? entry.combinationList.length - displayCombos.length : 0;
 
   return (
     <View style={styles.entry}>
-      <View style={styles.entryMain}>
+      <Pressable
+        style={styles.entryMain}
+        onPress={() => {
+          if (!hasCombos) return;
+          haptic.selection();
+          setCombosOpen((o) => !o);
+        }}
+      >
         <Text style={styles.entryLabel}>{formatLabel(entry)}</Text>
         <View style={styles.entryRight}>
           {outcome === 'win' && (
@@ -86,8 +100,11 @@ function BetEntry({
           {outcome === 'loss' && (
             <Text style={styles.outcomeLoss}>✗</Text>
           )}
+          {hasCombos && (
+            <Text style={[styles.entryChevron, combosOpen && styles.entryChevronOpen]}>›</Text>
+          )}
         </View>
-      </View>
+      </Pressable>
 
       {outcome === 'win' && (
         <View style={styles.payoutRow}>
@@ -150,6 +167,21 @@ function BetEntry({
         <Pressable onPress={() => setNoteEditing(true)} style={styles.noteToggle}>
           <Text style={styles.noteToggleText}>+ note</Text>
         </Pressable>
+      )}
+
+      {combosOpen && hasCombos && (
+        <View style={styles.combosGrid}>
+          {displayCombos.map((combo, i) => (
+            <View key={i} style={styles.combo}>
+              <Text style={styles.comboText}>{combo.join(' → ')}</Text>
+            </View>
+          ))}
+          {comboOverflow > 0 && (
+            <View style={styles.combo}>
+              <Text style={styles.comboOverflowText}>+{comboOverflow} more</Text>
+            </View>
+          )}
+        </View>
       )}
     </View>
   );
@@ -479,5 +511,36 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     minHeight: 36,
+  },
+  entryChevron: {
+    color: colors.textDim,
+    fontSize: 18,
+    marginLeft: spacing.xs,
+  },
+  entryChevronOpen: {
+    transform: [{ rotate: '90deg' }],
+  },
+  combosGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
+  },
+  combo: {
+    backgroundColor: colors.surfaceHigh,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  comboText: {
+    color: colors.textMuted,
+    fontSize: font.sm,
+    fontFamily: 'monospace',
+  },
+  comboOverflowText: {
+    color: colors.textDim,
+    fontSize: font.sm,
+    fontStyle: 'italic',
   },
 });

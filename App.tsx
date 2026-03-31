@@ -54,7 +54,6 @@ import ModifierSelector from './src/components/ModifierSelector';
 import HorseSelector from './src/components/HorseSelector';
 import LegSelector from './src/components/LegSelector';
 import CalculateButton from './src/components/CalculateButton';
-import ResultsPanel from './src/components/ResultsPanel';
 import BetHistory from './src/components/BetHistory';
 import RaceOutcome from './src/components/RaceOutcome';
 import BetSummaryModal from './src/components/BetSummaryModal';
@@ -691,7 +690,6 @@ export default function App() {
         raceNumber: active.raceDay.currentRace,
       };
       updateActive({
-        result: newResult,
         history: [...active.history, newResult],
         selectedBetType: null,
         selectedModifier: null,
@@ -732,7 +730,6 @@ export default function App() {
       raceNumber: active.raceDay.currentRace,
     };
     updateActive({
-      result: newResult,
       history: [...active.history, newResult],
       selectedBetType: null,
       selectedModifier: null,
@@ -893,8 +890,6 @@ export default function App() {
           pendingCost={pendingCost}
         />
 
-        {active.result && <ResultsPanel result={active.result} />}
-
         <BetHistory
           key={activeBettorId}
           history={active.history
@@ -918,7 +913,6 @@ export default function App() {
               history: active.history.filter(
                 (_, idx) => idx !== originalIndex,
               ),
-              result: null,
             })
           }
           onClearAll={() =>
@@ -926,7 +920,6 @@ export default function App() {
               history: active.history.filter(
                 (e) => e.raceNumber !== rdCurrentRace,
               ),
-              result: null,
             })
           }
           onSetPayout={(originalIndex, payout) => {
