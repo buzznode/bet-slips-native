@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   ScrollView,
@@ -37,6 +37,7 @@ import {
   getMinHorses,
 } from './src/lib/betting';
 import { summarizeDay, checkBetOutcome } from './src/lib/outcomes';
+import { haptic } from './src/lib/haptics';
 import { exportBackup, importBackup } from './src/lib/backup';
 import { addToArchive, parseArchive, ARCHIVE_KEY } from './src/lib/archive';
 
@@ -106,6 +107,8 @@ function buildDefaultState(): AppState {
 
 export default function App() {
   const [state, setState] = useState<AppState | null>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const betTypeSelectorY = useRef(0);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [daySummaryOpen, setDaySummaryOpen] = useState(false);
   const [quickViewBettorId, setQuickViewBettorId] = useState<string | null>(null);
@@ -355,6 +358,7 @@ export default function App() {
   function handleApplyTemplate(template: BetTemplate) {
     const bet = BET_TYPES.find((b) => b.id === template.betTypeId);
     if (!bet) return;
+    haptic.medium();
     updateActive({
       selectedBetType: template.betTypeId,
       selectedModifier: template.modifier,
@@ -366,6 +370,9 @@ export default function App() {
           : [],
       result: null,
     });
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ y: betTypeSelectorY.current, animated: true });
+    }, 50);
   }
 
   // ── Bettor handlers ────────────────────────────────────────────────────────
@@ -773,6 +780,7 @@ export default function App() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
       <ScrollView
+        ref={scrollViewRef}
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
@@ -840,12 +848,14 @@ export default function App() {
           onDelete={handleDeleteTemplate}
         />
 
-        <BetTypeSelector
-          selectedBetType={active.selectedBetType}
-          numHorses={effectiveNumHorses}
-          disabled={isRaceLocked}
-          onSelect={handleSelectBetType}
-        />
+        <View onLayout={(e) => { betTypeSelectorY.current = e.nativeEvent.layout.y; }}>
+          <BetTypeSelector
+            selectedBetType={active.selectedBetType}
+            numHorses={effectiveNumHorses}
+            disabled={isRaceLocked}
+            onSelect={handleSelectBetType}
+          />
+        </View>
 
         {!isMultiRace && (
           <ModifierSelector

@@ -13,44 +13,17 @@ export default function ResultsPanel({ result }: ResultsPanelProps) {
   const [combosOpen, setCombosOpen] = useState(false);
   const displayList = result.combinationList.slice(0, MAX_DISPLAY);
   const overflow = result.combinationList.length - displayList.length;
+  const hasLegs = result.legs && result.legs.length > 0;
+  const hasCombos = displayList.length > 0;
+
+  if (!hasLegs && !hasCombos) return null;
 
   return (
     <View style={styles.panel}>
-      <Text style={styles.label}>Results</Text>
-
-      <View style={styles.statsRow}>
-        <View style={styles.stat}>
-          <Text style={styles.statValue}>
-            {result.betType}
-            {result.modifier ? (
-              <Text style={styles.modifier}> ({result.modifier.toLowerCase()})</Text>
-            ) : null}
-          </Text>
-          <Text style={styles.statLabel}>Bet Type</Text>
-        </View>
-
-        <View style={styles.stat}>
-          <Text style={styles.statValue}>{result.combinations}</Text>
-          <Text style={styles.statLabel}>Combinations</Text>
-        </View>
-
-        <View style={styles.stat}>
-          <Text style={styles.statValue}>${result.unitCost.toFixed(2)}</Text>
-          <Text style={styles.statLabel}>Per Ticket</Text>
-        </View>
-
-        <View style={[styles.stat, styles.statTotal]}>
-          <Text style={[styles.statValue, styles.statValueAccent]}>
-            ${result.totalCost.toFixed(2)}
-          </Text>
-          <Text style={styles.statLabel}>Total Cost</Text>
-        </View>
-      </View>
-
-      {result.legs && (
+      {hasLegs && (
         <View style={styles.legs}>
           <Text style={styles.legsHeader}>Leg breakdown</Text>
-          {result.legs.map((leg, i) => (
+          {result.legs!.map((leg, i) => (
             <View key={i} style={styles.legRow}>
               <Text style={styles.legLabel}>Race {i + 1}</Text>
               <Text style={styles.legHorses}>{leg.join(', ')}</Text>
@@ -60,13 +33,13 @@ export default function ResultsPanel({ result }: ResultsPanelProps) {
             </View>
           ))}
           <Text style={styles.legsFormula}>
-            {result.legs.map((l) => l.length).join(' × ')} ={' '}
+            {result.legs!.map((l) => l.length).join(' × ')} ={' '}
             {result.combinations} ticket{result.combinations !== 1 ? 's' : ''}
           </Text>
         </View>
       )}
 
-      {displayList.length > 0 && (
+      {hasCombos && (
         <View style={styles.combos}>
           <Pressable
             style={styles.combosToggle}
@@ -105,57 +78,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    padding: spacing.lg,
-  },
-  label: {
-    color: colors.textMuted,
-    fontSize: font.sm,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: spacing.md,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  stat: {
-    flex: 1,
-    backgroundColor: colors.surfaceHigh,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  statTotal: {
-    borderWidth: 1,
-    borderColor: colors.primary,
-  },
-  statValue: {
-    color: colors.text,
-    fontSize: font.sm,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  modifier: {
-    color: colors.textMuted,
-    fontWeight: '400',
-  },
-  statValueAccent: {
-    color: colors.primaryLight,
-    fontSize: font.md,
-  },
-  statLabel: {
-    color: colors.textDim,
-    fontSize: 11,
-    textAlign: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
   },
   legs: {
-    marginTop: spacing.md,
     backgroundColor: colors.surfaceHigh,
     borderRadius: radius.md,
     padding: spacing.md,
     gap: spacing.sm,
+    marginBottom: spacing.sm,
   },
   legsHeader: {
     color: colors.textMuted,
@@ -189,7 +120,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   combos: {
-    marginTop: spacing.md,
+    marginBottom: spacing.sm,
   },
   combosToggle: {
     flexDirection: 'row',
@@ -216,6 +147,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.xs,
     paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
   },
   combo: {
     backgroundColor: colors.surfaceHigh,
