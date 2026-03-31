@@ -238,7 +238,11 @@ export default function BetHistory({
           {!locked && (
             <View style={styles.actions}>
               <Pressable onPress={() => {
-                Alert.alert('Clear All Bets', 'Remove all bets for this race?', [
+                const activeBettor = bettors.find((b) => b.id === activeBettorId);
+                const msg = activeBettor
+                  ? `Remove all Race ${raceNumber} bets for ${activeBettor.name}?`
+                  : `Remove all Race ${raceNumber} bets?`;
+                Alert.alert('Clear All Bets', msg, [
                   { text: 'Cancel', style: 'cancel' },
                   { text: 'Clear All', style: 'destructive', onPress: () => { haptic.heavy(); onClearAll(); } },
                 ]);

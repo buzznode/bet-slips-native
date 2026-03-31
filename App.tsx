@@ -919,6 +919,7 @@ export default function App() {
               history: active.history.filter(
                 (_, idx) => idx !== originalIndex,
               ),
+              result: null,
             })
           }
           onClearAll={() =>
@@ -926,6 +927,7 @@ export default function App() {
               history: active.history.filter(
                 (e) => e.raceNumber !== rdCurrentRace,
               ),
+              result: null,
             })
           }
           onSetPayout={(originalIndex, payout) => {
