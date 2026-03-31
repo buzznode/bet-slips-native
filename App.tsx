@@ -7,6 +7,8 @@ import {
   Alert,
   StyleSheet,
   StatusBar,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -172,22 +174,6 @@ export default function App() {
         .map((e) => e.raceNumber ?? 0),
     ),
   );
-
-  const anyRaceComplete = (() => {
-    const { firstRace, lastRace } = active.raceDay;
-    for (let r = firstRace; r <= lastRace; r++) {
-      const res = activeTrack.results[r];
-      if (
-        res?.first != null &&
-        res?.second != null &&
-        res?.third != null &&
-        (!superfectaRaces.has(r) || res?.fourth != null)
-      ) {
-        return true;
-      }
-    }
-    return false;
-  })();
 
   const lastRaceComplete = (() => {
     const { lastRace } = active.raceDay;
@@ -782,6 +768,10 @@ export default function App() {
       <StatusBar barStyle="light-content" backgroundColor={colors.bg} />
       <Header onReset={handleResetApp} onSettings={() => setSettingsOpen(true)} />
 
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoid}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -1001,6 +991,7 @@ export default function App() {
         {/* bottom padding */}
         <View style={{ height: 64 }} />
       </ScrollView>
+      </KeyboardAvoidingView>
 
       {daySummaryOpen && (
         <DaySummaryModal
@@ -1084,6 +1075,9 @@ const styles = StyleSheet.create({
   loadingText: {
     color: colors.textDim,
     fontSize: font.md,
+  },
+  keyboardAvoid: {
+    flex: 1,
   },
   scroll: {
     flex: 1,
