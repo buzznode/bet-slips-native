@@ -71,8 +71,8 @@ describe('calculateCombinations', () => {
       expect(calculateCombinations('exacta', 'wheel', [1, 2, 3, 4])).toBe(3);
     });
 
-    it('key-horse: 4 horses = 3 combinations (P(3,1))', () => {
-      expect(calculateCombinations('exacta', 'key-horse', [1, 2, 3, 4])).toBe(3);
+    it('key-horse: 4 horses = 6 combinations (key covers both positions: 2*(4-1))', () => {
+      expect(calculateCombinations('exacta', 'key-horse', [1, 2, 3, 4])).toBe(6);
     });
   });
 

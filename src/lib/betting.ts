@@ -20,6 +20,7 @@ export function calculateCombinations(
   betId: string,
   modifier: ModifierId | null,
   horses: number[],
+  _keyPosition?: 'top' | 'bottom',
 ): number {
   const n = horses.length;
   const bet = BET_TYPES.find((b) => b.id === betId);
@@ -37,6 +38,8 @@ export function calculateCombinations(
     case 'part-wheel':
       return combinations(n, r - 1);
     case 'key-horse':
+      // Exacta key covers both positions: key on top + key on bottom
+      if (betId === 'exacta') return 2 * (n - 1);
       return permutations(n - 1, r - 1);
     default:
       return 1;
@@ -65,6 +68,7 @@ export function generateCombinationList(
   betId: string,
   modifier: ModifierId | null,
   horses: number[],
+  keyPosition: 'top' | 'bottom' = 'top',
 ): number[][] {
   const bet = BET_TYPES.find((b) => b.id === betId);
   if (!bet) return [];
@@ -76,10 +80,18 @@ export function generateCombinationList(
     case 'box':
       return genPerms(horses, r);
     case 'wheel':
+      return rest.map((h) => keyPosition === 'top' ? [key, h] : [h, key]);
     case 'key-horse':
+      // Exacta key: cover both positions
+      if (betId === 'exacta') {
+        return [
+          ...rest.map((h) => [key, h]),
+          ...rest.map((h) => [h, key]),
+        ];
+      }
       return genPerms(rest, r - 1).map((p) => [key, ...p]);
     case 'part-wheel':
-      return genCombos(rest, r - 1).map((c) => [key, ...c]);
+      return rest.map((h) => keyPosition === 'top' ? [key, h] : [h, key]);
     default:
       return [];
   }

@@ -87,7 +87,7 @@ function migrateState(raw: { tracks: TrackSession[]; activeTrackId: string }): {
           const raceDay = { ...createRaceDaySession(), ...savedRaceDay };
           const selectedModifier =
             b.selectedModifier === 'straight' ? null : (b.selectedModifier ?? null);
-          return { ...b, raceDay, selectedModifier };
+          return { ...b, raceDay, selectedModifier, exactaKeyPosition: b.exactaKeyPosition ?? 'top' };
         }) ?? [],
       results: Object.fromEntries(
         Object.entries(t.results ?? {}).map(([k, v]) => [
@@ -708,16 +708,23 @@ export default function App() {
       effectiveModifier === 'key-horse' || effectiveModifier === 'wheel'
         ? active.selectedHorses
         : [...active.selectedHorses].sort((a, b) => a - b);
+    const isExactaPositional =
+      active.selectedBetType === 'exacta' &&
+      (effectiveModifier === 'wheel' || effectiveModifier === 'part-wheel');
+    const keyPosition = isExactaPositional ? active.exactaKeyPosition : undefined;
+
     const combos = calculateCombinations(
       active.selectedBetType,
       effectiveModifier,
       orderedHorses,
+      keyPosition,
     );
     const totalCost = combos * active.betUnit;
     const combinationList = generateCombinationList(
       active.selectedBetType,
       effectiveModifier,
       orderedHorses,
+      keyPosition,
     );
 
     const newResult = {
@@ -731,6 +738,7 @@ export default function App() {
       horses: orderedHorses,
       combinationList,
       raceNumber: active.raceDay.currentRace,
+      ...(keyPosition ? { keyPosition } : {}),
     };
     updateActive({
       history: [...active.history, newResult],
@@ -873,8 +881,12 @@ export default function App() {
             scratchedHorses={effectiveScratchedHorses}
             scratchConflicts={scratchConflicts[activeBettorId] ?? []}
             modifier={active.selectedModifier}
+            betId={active.selectedBetType}
+            positions={BET_TYPES.find((b) => b.id === active.selectedBetType)?.positions}
+            exactaKeyPosition={active.exactaKeyPosition}
             disabled={isRaceLocked}
             onToggle={handleToggleHorse}
+            onKeyPositionChange={(pos) => updateActive({ exactaKeyPosition: pos, selectedHorses: [], result: null })}
           />
         )}
 

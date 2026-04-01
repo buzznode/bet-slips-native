@@ -27,6 +27,9 @@ function formatHorses(result: BetResult): string {
   }
   if (KEY_MODIFIERS.includes(result.modifier) && result.horses.length > 0) {
     const [key, ...rest] = result.horses;
+    if (result.keyPosition === 'bottom') {
+      return rest.length > 0 ? `${rest.join(', ')} / ${key}` : String(key);
+    }
     return rest.length > 0 ? `${key} / ${rest.join(', ')}` : String(key);
   }
   return result.horses.join(', ');

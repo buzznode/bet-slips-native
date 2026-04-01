@@ -72,6 +72,7 @@ export interface BetResult {
   raceNumber?: number;
   payout?: number;
   note?: string;
+  keyPosition?: 'top' | 'bottom';
 }
 
 export interface BettorState {
@@ -84,6 +85,7 @@ export interface BettorState {
   selectedModifier: ModifierId | null;
   selectedHorses: number[];
   selectedLegs: number[][];
+  exactaKeyPosition: 'top' | 'bottom';
   result: BetResult | null;
   history: BetResult[];
   raceDay: RaceDaySession;
@@ -99,6 +101,7 @@ export function createBettor(name: string): BettorState {
     selectedModifier: null,
     selectedHorses: [],
     selectedLegs: [],
+    exactaKeyPosition: 'top',
     result: null,
     history: [],
     raceDay: createRaceDaySession(),

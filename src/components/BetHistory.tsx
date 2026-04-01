@@ -42,14 +42,21 @@ function formatHorsesText(result: BetResult): string {
   }
   if (KEY_MODIFIERS_DISPLAY.includes(result.modifier) && result.horses.length > 0) {
     const [key, ...rest] = result.horses;
+    if (result.keyPosition === 'bottom') {
+      return rest.length > 0 ? `${rest.join(', ')} / ${key}` : String(key);
+    }
     return rest.length > 0 ? `${key} / ${rest.join(', ')}` : String(key);
   }
   return result.horses.join(', ');
 }
 
 function formatLabel(result: BetResult): string {
-  if (result.modifier) return `${result.betType} — ${result.modifier}`;
-  return result.betType;
+  if (!result.modifier) return result.betType;
+  if (result.keyPosition) {
+    const pos = result.keyPosition === 'top' ? '1st' : '2nd';
+    return `${result.betType} — ${result.modifier} (key ${pos})`;
+  }
+  return `${result.betType} — ${result.modifier}`;
 }
 
 const MAX_COMBOS = 100;

@@ -3,8 +3,10 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import type { ModifierId } from '../types';
 import HorseButton from './HorseButton';
 import { colors, spacing, radius, font } from '../theme';
+import { haptic } from '../lib/haptics';
 
-const KEY_MODIFIERS: ModifierId[] = ['key-horse', 'wheel'];
+const KEY_MODIFIERS: ModifierId[] = ['key-horse', 'wheel', 'part-wheel'];
+const ORDINALS = ['1st', '2nd', '3rd', '4th'];
 
 interface HorseSelectorProps {
   numHorses: number;
@@ -12,8 +14,12 @@ interface HorseSelectorProps {
   scratchedHorses: number[];
   scratchConflicts?: number[];
   modifier: ModifierId | null;
+  betId?: string | null;
+  positions?: number;
+  exactaKeyPosition?: 'top' | 'bottom';
   disabled?: boolean;
   onToggle: (horse: number) => void;
+  onKeyPositionChange?: (pos: 'top' | 'bottom') => void;
 }
 
 export default function HorseSelector({
@@ -22,14 +28,21 @@ export default function HorseSelector({
   scratchedHorses,
   scratchConflicts = [],
   modifier,
+  betId,
+  positions = 1,
+  exactaKeyPosition = 'top',
   disabled = false,
   onToggle,
+  onKeyPositionChange,
 }: HorseSelectorProps) {
   const [expanded, setExpanded] = useState(true);
   const horses = Array.from({ length: numHorses }, (_, i) => i + 1);
   const isKeyMode = modifier !== null && KEY_MODIFIERS.includes(modifier);
   const keyHorse = isKeyMode ? selectedHorses[0] : null;
   const withHorses = isKeyMode ? selectedHorses.slice(1) : [];
+
+  const isExactaPositional =
+    betId === 'exacta' && (modifier === 'wheel' || modifier === 'part-wheel');
 
   function getVariant(n: number) {
     if (scratchedHorses.includes(n)) return 'scratched' as const;
@@ -41,12 +54,24 @@ export default function HorseSelector({
   }
 
   function getHint() {
-    if (!isKeyMode) return 'Select horses for your bet';
-    if (selectedHorses.length === 0)
-      return 'Select your key horse first, then the others';
-    if (selectedHorses.length === 1)
-      return `Key horse: ${keyHorse} — now select horses to fill remaining positions`;
-    return `Key: ${keyHorse} | With: ${withHorses.join(', ')}`;
+    if (modifier === 'key-horse') {
+      if (selectedHorses.length === 0) return 'Select your key horse first, then the others';
+      if (selectedHorses.length === 1) return `Key horse: ${keyHorse} — now select horses to fill remaining positions`;
+      return `Key: ${keyHorse} | With: ${withHorses.join(', ')}`;
+    }
+    if (modifier === 'wheel' || modifier === 'part-wheel') {
+      if (selectedHorses.length === 0) return 'Select your key horse first, then the others';
+      if (selectedHorses.length === 1) return `Key horse: ${keyHorse} — now select horses to fill remaining positions`;
+      return `Key: ${keyHorse} | With: ${withHorses.join(', ')}`;
+    }
+    if (modifier === 'straight' || modifier === null) {
+      if (positions > 1) {
+        const next = ORDINALS[selectedHorses.length];
+        if (next) return `Select your ${next} place horse`;
+        return `${ORDINALS.slice(0, positions).map((o, i) => `${o}: ${selectedHorses[i]}`).join(', ')}`;
+      }
+    }
+    return 'Select horses for your bet';
   }
 
   return (
@@ -58,6 +83,30 @@ export default function HorseSelector({
 
       {expanded && (
         <>
+          {isExactaPositional && onKeyPositionChange && (
+            <View style={styles.positionToggle}>
+              <Text style={styles.positionLabel}>Key horse position:</Text>
+              <View style={styles.positionBtns}>
+                <Pressable
+                  style={[styles.posBtn, exactaKeyPosition === 'top' && styles.posBtnActive]}
+                  onPress={() => { haptic.selection(); onKeyPositionChange('top'); }}
+                >
+                  <Text style={[styles.posBtnText, exactaKeyPosition === 'top' && styles.posBtnTextActive]}>
+                    1st (top)
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.posBtn, exactaKeyPosition === 'bottom' && styles.posBtnActive]}
+                  onPress={() => { haptic.selection(); onKeyPositionChange('bottom'); }}
+                >
+                  <Text style={[styles.posBtnText, exactaKeyPosition === 'bottom' && styles.posBtnTextActive]}>
+                    2nd (bottom)
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
+
           <View style={styles.grid}>
             {horses.map((n) => (
               <HorseButton
@@ -110,6 +159,41 @@ const styles = StyleSheet.create({
   },
   chevronOpen: {
     transform: [{ rotate: '90deg' }],
+  },
+  positionToggle: {
+    marginTop: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  positionLabel: {
+    color: colors.textMuted,
+    fontSize: font.sm,
+    fontWeight: '600',
+  },
+  positionBtns: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  posBtn: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+    borderRadius: radius.full,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceHigh,
+  },
+  posBtnActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  posBtnText: {
+    color: colors.textMuted,
+    fontSize: font.sm,
+    fontWeight: '600',
+  },
+  posBtnTextActive: {
+    color: '#fff',
   },
   grid: {
     flexDirection: 'row',
