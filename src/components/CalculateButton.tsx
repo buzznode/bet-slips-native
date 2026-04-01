@@ -7,16 +7,21 @@ interface CalculateButtonProps {
   onClick: () => void;
   disabled: boolean;
   pendingCost?: number | null;
+  multiBet?: boolean;
 }
 
 export default function CalculateButton({
   onClick,
   disabled,
   pendingCost,
+  multiBet = false,
 }: CalculateButtonProps) {
-  const label = pendingCost != null
-    ? `Add ${pendingCost % 1 === 0 ? `$${pendingCost}` : `$${pendingCost.toFixed(2)}`} Bet →`
-    : 'Add Bet →';
+  const costStr = pendingCost != null
+    ? ` ${pendingCost % 1 === 0 ? `$${pendingCost}` : `$${pendingCost.toFixed(2)}`}`
+    : '';
+  const label = multiBet
+    ? `Add 2 Bets${costStr} →`
+    : `Add${costStr} Bet →`;
 
   return (
     <Pressable

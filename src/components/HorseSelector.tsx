@@ -41,6 +41,7 @@ export default function HorseSelector({
   const keyHorse = isKeyMode ? selectedHorses[0] : null;
   const withHorses = isKeyMode ? selectedHorses.slice(1) : [];
 
+  const isExactaKey = betId === 'exacta' && modifier === 'key-horse';
   const isExactaPositional =
     betId === 'exacta' && (modifier === 'wheel' || modifier === 'part-wheel');
 
@@ -55,7 +56,10 @@ export default function HorseSelector({
 
   function getHint() {
     if (modifier === 'key-horse') {
-      if (selectedHorses.length === 0) return 'Select your key horse first, then the others';
+      if (selectedHorses.length === 0) return isExactaKey
+        ? 'Select your key horse — all others will be auto-selected'
+        : 'Select your key horse first, then the others';
+      if (isExactaKey) return `Key: ${keyHorse} | With: ${withHorses.join(', ')} — creates 2 bets (top & bottom)`;
       if (selectedHorses.length === 1) return `Key horse: ${keyHorse} — now select horses to fill remaining positions`;
       return `Key: ${keyHorse} | With: ${withHorses.join(', ')}`;
     }
@@ -83,7 +87,7 @@ export default function HorseSelector({
 
       {expanded && (
         <>
-          {isExactaPositional && onKeyPositionChange && (
+          {isExactaPositional && !isExactaKey && onKeyPositionChange && (
             <View style={styles.positionToggle}>
               <Text style={styles.positionLabel}>Key horse position:</Text>
               <View style={styles.positionBtns}>
