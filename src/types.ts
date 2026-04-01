@@ -155,9 +155,9 @@ export const BET_TYPES: BetType[] = [
 export const MODIFIERS: Modifier[] = [
   { id: 'straight', name: 'Straight' },
   { id: 'box', name: 'Box' },
-  { id: 'wheel', name: 'Wheel' },
-  { id: 'part-wheel', name: 'Part Wheel' },
   { id: 'key-horse', name: 'Key Horse' },
+  { id: 'part-wheel', name: 'Part Wheel' },
+  { id: 'wheel', name: 'Wheel' },
 ];
 
 export interface BetTemplate {
