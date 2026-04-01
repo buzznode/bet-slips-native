@@ -648,6 +648,8 @@ export default function App() {
     );
   }
 
+  const STRAIGHT_ONLY_BET_TYPES = new Set(['win', 'place', 'show', 'across-the-board']);
+
   function handleSelectBetType(id: string) {
     const bet = BET_TYPES.find((b) => b.id === id);
     setHorseError(null);
@@ -655,6 +657,7 @@ export default function App() {
       selectedBetType: id,
       selectedHorses: [],
       result: null,
+      selectedModifier: STRAIGHT_ONLY_BET_TYPES.has(id) ? 'straight' : active.selectedModifier,
       selectedLegs:
         bet?.category === 'multi-race'
           ? Array.from({ length: bet.positions }, () => [])
@@ -849,6 +852,7 @@ export default function App() {
           <ModifierSelector
             selected={active.selectedModifier}
             disabled={isRaceLocked}
+            betTypeId={active.selectedBetType}
             onSelect={handleSelectModifier}
           />
         )}

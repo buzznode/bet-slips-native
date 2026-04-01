@@ -4,17 +4,22 @@ import { MODIFIERS } from '../types';
 import type { ModifierId } from '../types';
 import { colors, spacing, radius, font } from '../theme';
 
+const STRAIGHT_ONLY_BET_TYPES = new Set(['win', 'place', 'show', 'across-the-board']);
+
 interface ModifierSelectorProps {
   selected: ModifierId | null;
   disabled?: boolean;
+  betTypeId?: string | null;
   onSelect: (id: ModifierId) => void;
 }
 
 export default function ModifierSelector({
   selected,
   disabled = false,
+  betTypeId,
   onSelect,
 }: ModifierSelectorProps) {
+  const straightOnly = betTypeId != null && STRAIGHT_ONLY_BET_TYPES.has(betTypeId);
   const [expanded, setExpanded] = useState(true);
 
   return (
@@ -32,16 +37,17 @@ export default function ModifierSelector({
         >
           {MODIFIERS.map((mod) => {
             const isActive = selected === mod.id;
+            const isDisabled = disabled || (straightOnly && mod.id !== 'straight');
             return (
               <Pressable
                 key={mod.id}
                 style={[
                   styles.btn,
                   isActive && styles.btnActive,
-                  disabled && styles.btnDisabled,
+                  isDisabled && styles.btnDisabled,
                 ]}
-                onPress={() => !disabled && onSelect(mod.id)}
-                disabled={disabled}
+                onPress={() => !isDisabled && onSelect(mod.id)}
+                disabled={isDisabled}
               >
                 <Text
                   style={[styles.btnText, isActive && styles.btnTextActive]}
