@@ -36,6 +36,8 @@ import {
   calculateLegCombinations,
   generateLegCombinationList,
   getMinHorses,
+  generatePositionalCombos,
+  calculatePositionalCombinations,
 } from './src/lib/betting';
 import { summarizeDay, checkBetOutcome } from './src/lib/outcomes';
 import { haptic } from './src/lib/haptics';
@@ -54,6 +56,7 @@ import BetTypeSelector from './src/components/BetTypeSelector';
 import ModifierSelector from './src/components/ModifierSelector';
 import HorseSelector from './src/components/HorseSelector';
 import LegSelector from './src/components/LegSelector';
+import PositionalSelector from './src/components/PositionalSelector';
 import CalculateButton from './src/components/CalculateButton';
 import BetHistory from './src/components/BetHistory';
 import RaceOutcome from './src/components/RaceOutcome';
@@ -192,6 +195,10 @@ export default function App() {
   const isMultiRace =
     BET_TYPES.find((b) => b.id === active.selectedBetType)?.category ===
     'multi-race';
+
+  const isPositionalPartWheel =
+    (active.selectedBetType === 'trifecta' || active.selectedBetType === 'superfecta') &&
+    active.selectedModifier === 'part-wheel';
 
   const rdCurrentRace = active.raceDay.currentRace;
   const currentRaceConfig = active.raceDay.races[rdCurrentRace] ?? {
@@ -680,21 +687,34 @@ export default function App() {
     const allowed = MODIFIER_AVAILABILITY[id] ?? null;
     const currentModifier = active.selectedModifier ?? 'straight';
     const resetModifier = allowed != null && !allowed.includes(currentModifier) ? 'straight' : active.selectedModifier;
+    const isPositional =
+      (id === 'trifecta' || id === 'superfecta') && resetModifier === 'part-wheel';
     updateActive({
       selectedBetType: id,
       selectedHorses: [],
       result: null,
       selectedModifier: resetModifier,
       selectedLegs:
-        bet?.category === 'multi-race'
-          ? Array.from({ length: bet.positions }, () => [])
+        bet?.category === 'multi-race' || isPositional
+          ? Array.from({ length: bet!.positions }, () => [])
           : [],
     });
   }
 
   function handleSelectModifier(id: ModifierId) {
     setHorseError(null);
-    updateActive({ selectedModifier: id, result: null });
+    const bet = BET_TYPES.find((b) => b.id === active.selectedBetType);
+    const isPositional =
+      (active.selectedBetType === 'trifecta' || active.selectedBetType === 'superfecta') &&
+      id === 'part-wheel';
+    updateActive({
+      selectedModifier: id,
+      selectedHorses: [],
+      result: null,
+      selectedLegs: isPositional && bet
+        ? Array.from({ length: bet.positions }, () => [])
+        : [],
+    });
   }
 
   function handleCalculate() {
@@ -724,6 +744,33 @@ export default function App() {
         selectedBetType: null,
         selectedModifier: null,
         selectedLegs: Array.from({ length: bet.positions }, () => []),
+      });
+      return;
+    }
+
+    // Positional part-wheel (trifecta/superfecta): each leg = one finish position
+    if (isPositionalPartWheel) {
+      const combos = calculatePositionalCombinations(active.selectedLegs);
+      if (combos === 0) return;
+      const combinationList = generatePositionalCombos(active.selectedLegs);
+      const totalCost = combos * active.betUnit;
+      const newResult = {
+        betType: bet.name,
+        modifier: 'Part Wheel',
+        combinations: combos,
+        unitCost: active.betUnit,
+        totalCost,
+        horses: active.selectedLegs.flat(),
+        legs: active.selectedLegs,
+        combinationList,
+        raceNumber: active.raceDay.currentRace,
+      };
+      updateActive({
+        history: [...active.history, newResult],
+        selectedBetType: null,
+        selectedModifier: null,
+        selectedLegs: Array.from({ length: bet.positions }, () => []),
+        selectedHorses: [],
       });
       return;
     }
@@ -777,23 +824,31 @@ export default function App() {
     });
   }
 
+  const positionalCombos = isPositionalPartWheel
+    ? calculatePositionalCombinations(active.selectedLegs)
+    : null;
+
   const canCalculate =
     active.selectedBetType !== null &&
-    (isMultiRace
-      ? active.selectedLegs.length > 0 &&
-        active.selectedLegs.every((l) => l.length > 0)
-      : active.selectedHorses.length >=
-        getMinHorses(active.selectedBetType, active.selectedModifier));
+    (isPositionalPartWheel
+      ? active.selectedLegs.every((l) => l.length > 0) && (positionalCombos ?? 0) > 0
+      : isMultiRace
+        ? active.selectedLegs.length > 0 &&
+          active.selectedLegs.every((l) => l.length > 0)
+        : active.selectedHorses.length >=
+          getMinHorses(active.selectedBetType, active.selectedModifier));
 
   const pendingCost =
     canCalculate && active.selectedBetType
-      ? isMultiRace
-        ? calculateLegCombinations(active.selectedLegs) * active.betUnit
-        : calculateCombinations(
-            active.selectedBetType,
-            active.selectedModifier,
-            active.selectedHorses,
-          ) * active.betUnit
+      ? isPositionalPartWheel
+        ? (positionalCombos ?? 0) * active.betUnit
+        : isMultiRace
+          ? calculateLegCombinations(active.selectedLegs) * active.betUnit
+          : calculateCombinations(
+              active.selectedBetType,
+              active.selectedModifier,
+              active.selectedHorses,
+            ) * active.betUnit
       : null;
 
   return (
@@ -902,6 +957,15 @@ export default function App() {
             legConfigs={legConfigs}
             startRace={rdCurrentRace}
             disabled={isRaceLocked}
+          />
+        ) : isPositionalPartWheel ? (
+          <PositionalSelector
+            numHorses={effectiveNumHorses}
+            scratchedHorses={effectiveScratchedHorses}
+            positions={BET_TYPES.find((b) => b.id === active.selectedBetType)?.positions ?? 3}
+            selectedLegs={active.selectedLegs}
+            disabled={isRaceLocked}
+            onToggle={handleToggleLegHorse}
           />
         ) : (
           <HorseSelector

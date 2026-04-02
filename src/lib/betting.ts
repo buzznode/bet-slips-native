@@ -122,6 +122,21 @@ export function getMinHorses(betId: string, modifier: ModifierId | null): number
   return bet.positions;
 }
 
+// Positional part-wheel: cross-product of positions, discard tickets where
+// any horse appears more than once (a horse can't finish in two positions).
+export function generatePositionalCombos(positions: number[][]): number[][] {
+  return positions
+    .reduce<number[][]>(
+      (acc, pos) => acc.flatMap((combo) => pos.map((h) => [...combo, h])),
+      [[]],
+    )
+    .filter((ticket) => new Set(ticket).size === ticket.length);
+}
+
+export function calculatePositionalCombinations(positions: number[][]): number {
+  return generatePositionalCombos(positions).length;
+}
+
 export function calculateLegCombinations(legs: number[][]): number {
   return legs.reduce((acc, leg) => acc * leg.length, 1);
 }

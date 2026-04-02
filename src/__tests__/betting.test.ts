@@ -7,6 +7,8 @@ import {
   calculateLegCombinations,
   generateLegCombinationList,
   getMinHorses,
+  generatePositionalCombos,
+  calculatePositionalCombinations,
 } from '../lib/betting';
 
 describe('factorial', () => {
@@ -224,5 +226,68 @@ describe('getMinHorses', () => {
 
   it('returns 1 for unknown bet id', () => {
     expect(getMinHorses('unknown', 'straight')).toBe(1);
+  });
+});
+
+describe('generatePositionalCombos', () => {
+  it('2×2×2 with only 2 distinct horses yields 0 valid tickets', () => {
+    // Only horses 1 and 2 available — impossible to fill 3 distinct positions
+    const combos = generatePositionalCombos([[1, 2], [1, 2], [1, 2]]);
+    expect(combos).toHaveLength(0);
+  });
+
+  it('3×3×3 with 3 distinct horses yields 6 valid tickets (all permutations)', () => {
+    const combos = generatePositionalCombos([[1, 2, 3], [1, 2, 3], [1, 2, 3]]);
+    expect(combos).toHaveLength(6);
+    combos.forEach((ticket) => expect(new Set(ticket).size).toBe(3));
+  });
+
+  it('no horse appears twice in a single ticket', () => {
+    const combos = generatePositionalCombos([[1, 2, 3], [1, 2, 3], [1, 2, 3]]);
+    combos.forEach((ticket) => expect(new Set(ticket).size).toBe(ticket.length));
+  });
+
+  it('locked horse in position 1 eliminates conflicts', () => {
+    // 1st: only horse 1 — so horse 1 is locked and excluded from other positions
+    const combos = generatePositionalCombos([[1], [2, 3], [2, 3]]);
+    // 1st is always 1; 2nd/3rd must differ → [1,2,3] and [1,3,2] = 2 tickets
+    expect(combos).toHaveLength(2);
+    combos.forEach((ticket) => expect(ticket[0]).toBe(1));
+  });
+
+  it('returns 0 when same horse locked in two positions', () => {
+    const combos = generatePositionalCombos([[1], [1], [2, 3]]);
+    expect(combos).toHaveLength(0);
+  });
+
+  it('superfecta 4 positions: 1×4×4×4 with single lock', () => {
+    const combos = generatePositionalCombos([[1], [2, 3, 4, 5], [2, 3, 4, 5], [2, 3, 4, 5]]);
+    // Key=1 locked in 1st; 2nd/3rd/4th pick from {2,3,4,5} with no repeats = P(4,3) = 24
+    expect(combos).toHaveLength(24);
+    combos.forEach((ticket) => expect(new Set(ticket).size).toBe(4));
+  });
+
+  it('example from spreadsheet: 1,2 / 1,2,3 / 4,5 for trifecta', () => {
+    const combos = generatePositionalCombos([[1, 2], [1, 2, 3], [4, 5]]);
+    // 3rd position (4,5) never overlaps with 1st/2nd (1,2,3), so only constraint
+    // is p1 ≠ p2. p1=1 → p2 ∈ {2,3}, p1=2 → p2 ∈ {1,3} → 4 pairs × 2 for p3 = 8
+    expect(combos).toHaveLength(8);
+    combos.forEach((ticket) => {
+      expect([4, 5]).toContain(ticket[2]);
+      expect(new Set(ticket).size).toBe(3);
+    });
+  });
+});
+
+describe('calculatePositionalCombinations', () => {
+  it('matches generatePositionalCombos length', () => {
+    const positions = [[1, 2], [1, 2, 3], [3, 4, 5]];
+    expect(calculatePositionalCombinations(positions)).toBe(
+      generatePositionalCombos(positions).length,
+    );
+  });
+
+  it('returns 0 when same horse locked in two positions', () => {
+    expect(calculatePositionalCombinations([[1], [1], [2, 3]])).toBe(0);
   });
 });

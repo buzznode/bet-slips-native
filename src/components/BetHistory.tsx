@@ -36,9 +36,15 @@ interface BetHistoryProps {
 
 const KEY_MODIFIERS_DISPLAY = ['Key Horse', 'Wheel', 'Part Wheel'];
 
+const ORDINALS = ['1st', '2nd', '3rd', '4th'];
+const POSITIONAL_BET_TYPES = new Set(['Trifecta', 'Superfecta']);
+
 function formatHorsesText(result: BetResult): string {
   if (result.legs && result.legs.length > 0) {
-    return result.legs.map((leg, i) => `R${i + 1}: ${leg.join(',')}`).join(' / ');
+    const isPositional = POSITIONAL_BET_TYPES.has(result.betType) && result.modifier === 'Part Wheel';
+    return result.legs
+      .map((leg, i) => `${isPositional ? ORDINALS[i] : `R${i + 1}`}: ${leg.join(',')}`)
+      .join(' / ');
   }
   if (KEY_MODIFIERS_DISPLAY.includes(result.modifier) && result.horses.length > 0) {
     const [key, ...rest] = result.horses;
