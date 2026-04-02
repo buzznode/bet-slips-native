@@ -603,6 +603,30 @@ export default function App() {
   function handleToggleHorse(horse: number) {
     const isDeselecting = active.selectedHorses.includes(horse);
 
+    // Wheel: first tap sets key and auto-selects the entire remaining field.
+    // Tapping the key again clears everything.
+    if (active.selectedModifier === 'wheel') {
+      setHorseError(null);
+      if (isDeselecting && active.selectedHorses[0] === horse) {
+        updateActive({ selectedHorses: [], result: null });
+        return;
+      }
+      if (active.selectedHorses.length === 0) {
+        const allOthers = Array.from({ length: effectiveNumHorses }, (_, i) => i + 1)
+          .filter((h) => h !== horse && !effectiveScratchedHorses.includes(h));
+        updateActive({ selectedHorses: [horse, ...allOthers], result: null });
+        return;
+      }
+      // With-horses can still be individually toggled to adjust the field
+      updateActive({
+        selectedHorses: isDeselecting
+          ? active.selectedHorses.filter((h) => h !== horse)
+          : [...active.selectedHorses, horse],
+        result: null,
+      });
+      return;
+    }
+
     if (
       !isDeselecting &&
       (active.selectedModifier === 'straight' || active.selectedModifier === null)

@@ -59,7 +59,11 @@ export default function HorseSelector({
       if (selectedHorses.length === 1) return `Key horse: ${keyHorse} — now select horses to fill remaining positions`;
       return `Key: ${keyHorse} | With: ${withHorses.join(', ')}`;
     }
-    if (modifier === 'wheel' || modifier === 'part-wheel') {
+    if (modifier === 'wheel') {
+      if (selectedHorses.length === 0) return 'Select your key horse — the rest of the field will be auto-selected';
+      return `Key: ${keyHorse} | With: ${withHorses.join(', ')}`;
+    }
+    if (modifier === 'part-wheel') {
       if (selectedHorses.length === 0) return 'Select your key horse first, then the others';
       if (selectedHorses.length === 1) return `Key horse: ${keyHorse} — now select horses to fill remaining positions`;
       return `Key: ${keyHorse} | With: ${withHorses.join(', ')}`;
