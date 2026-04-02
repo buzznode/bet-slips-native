@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { MODIFIERS } from '../types';
+import { MODIFIERS, MODIFIER_AVAILABILITY } from '../types';
 import type { ModifierId } from '../types';
 import { colors, spacing, radius, font } from '../theme';
-
-const STRAIGHT_ONLY_BET_TYPES = new Set(['win', 'place', 'show', 'across-the-board']);
 
 interface ModifierSelectorProps {
   selected: ModifierId | null;
@@ -19,7 +17,7 @@ export default function ModifierSelector({
   betTypeId,
   onSelect,
 }: ModifierSelectorProps) {
-  const straightOnly = betTypeId != null && STRAIGHT_ONLY_BET_TYPES.has(betTypeId);
+  const allowedModifiers = betTypeId != null ? MODIFIER_AVAILABILITY[betTypeId] ?? null : null;
   const [expanded, setExpanded] = useState(true);
 
   return (
@@ -37,7 +35,7 @@ export default function ModifierSelector({
         >
           {MODIFIERS.map((mod) => {
             const isActive = selected === mod.id;
-            const isDisabled = disabled || (straightOnly && mod.id !== 'straight');
+            const isDisabled = disabled || (allowedModifiers != null && !allowedModifiers.includes(mod.id));
             return (
               <Pressable
                 key={mod.id}

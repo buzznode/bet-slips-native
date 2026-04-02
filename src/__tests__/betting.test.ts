@@ -81,12 +81,12 @@ describe('calculateCombinations', () => {
       expect(calculateCombinations('trifecta', 'box', [1, 3, 5, 7])).toBe(24);
     });
 
-    it('key-horse: 4 horses = key + P(3,2) = 6', () => {
-      expect(calculateCombinations('trifecta', 'key-horse', [4, 5, 6, 7])).toBe(6);
+    it('key-horse: 4 horses = full key = 3 × P(3,2) = 18', () => {
+      expect(calculateCombinations('trifecta', 'key-horse', [4, 5, 6, 7])).toBe(18);
     });
 
-    it('part-wheel: 4 horses = C(4,2) = 6', () => {
-      expect(calculateCombinations('trifecta', 'part-wheel', [4, 5, 6, 7])).toBe(6);
+    it('part-wheel: key + 3 with-horses = 3 combos', () => {
+      expect(calculateCombinations('trifecta', 'part-wheel', [4, 5, 6, 7])).toBe(3);
     });
   });
 
@@ -122,18 +122,23 @@ describe('generateCombinationList', () => {
   });
 
   describe('key-horse (trifecta)', () => {
-    it('key horse is always in position 1', () => {
+    it('full key: 4 horses = 18 combos covering all 3 positions', () => {
       const list = generateCombinationList('trifecta', 'key-horse', [4, 5, 6, 7]);
-      expect(list).toHaveLength(6);
-      list.forEach((combo) => expect(combo[0]).toBe(4));
+      expect(list).toHaveLength(18);
     });
 
-    it('does not duplicate the key horse in subsequent positions', () => {
+    it('key horse appears exactly once in every ticket', () => {
       const list = generateCombinationList('trifecta', 'key-horse', [4, 5, 6, 7]);
       list.forEach((combo) => {
-        const withoutFirst = combo.slice(1);
-        expect(withoutFirst).not.toContain(4);
+        expect(combo.filter((h) => h === 4)).toHaveLength(1);
       });
+    });
+
+    it('key horse appears in each position across all tickets', () => {
+      const list = generateCombinationList('trifecta', 'key-horse', [4, 5, 6, 7]);
+      expect(list.some((c) => c[0] === 4)).toBe(true);
+      expect(list.some((c) => c[1] === 4)).toBe(true);
+      expect(list.some((c) => c[2] === 4)).toBe(true);
     });
   });
 
@@ -204,9 +209,9 @@ describe('generateLegCombinationList', () => {
 describe('getMinHorses', () => {
   it('returns positions for standard bet+modifier combos', () => {
     expect(getMinHorses('trifecta', 'straight')).toBe(3);
-    expect(getMinHorses('trifecta', 'box')).toBe(3);
+    expect(getMinHorses('trifecta', 'box')).toBe(4);
     expect(getMinHorses('exacta', 'wheel')).toBe(2);
-    expect(getMinHorses('superfecta', 'box')).toBe(4);
+    expect(getMinHorses('superfecta', 'box')).toBe(5);
   });
 
   it('returns 2 for quinella straight', () => {

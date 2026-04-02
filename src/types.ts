@@ -160,6 +160,19 @@ export const MODIFIERS: Modifier[] = [
   { id: 'wheel', name: 'Wheel' },
 ];
 
+// Which modifiers are valid for each bet type. Bet types not listed here
+// (e.g. multi-race) don't use modifiers at all.
+export const MODIFIER_AVAILABILITY: Record<string, ModifierId[]> = {
+  'win':              ['straight'],
+  'place':            ['straight'],
+  'show':             ['straight'],
+  'across-the-board': ['straight'],
+  'exacta':           ['straight', 'box', 'part-wheel', 'wheel'],
+  'quinella':         ['straight', 'box', 'part-wheel', 'wheel'],
+  'trifecta':         ['straight', 'box', 'key-horse', 'part-wheel'],
+  'superfecta':       ['straight', 'box', 'key-horse', 'part-wheel'],
+};
+
 export interface BetTemplate {
   id: string;
   name: string;

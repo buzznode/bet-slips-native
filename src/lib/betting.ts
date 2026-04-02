@@ -32,15 +32,19 @@ export function calculateCombinations(
     case 'straight':
       return 1;
     case 'box':
+      // Quinella is unordered: C(n,2). All others are ordered: P(n,r).
+      if (betId === 'quinella') return combinations(n, r);
       return permutations(n, r);
     case 'wheel':
-      return permutations(n - 1, r - 1);
+      // Wheel: key horse paired with each remaining horse in one position
+      return n - 1;
     case 'part-wheel':
-      return combinations(n, r - 1);
+      // Part wheel: key horse with each "with" horse (n-1 selections after key)
+      return n - 1;
     case 'key-horse':
-      // Exacta key covers both positions: key on top + key on bottom
-      if (betId === 'exacta') return 2 * (n - 1);
-      return permutations(n - 1, r - 1);
+      // Full key: key horse covered in every position.
+      // Total = positions × P(n-1, r-1)
+      return r * permutations(n - 1, r - 1);
     default:
       return 1;
   }
@@ -78,20 +82,30 @@ export function generateCombinationList(
     case 'straight':
       return [horses.slice(0, r)];
     case 'box':
+      // Quinella is unordered pairs; all others are ordered permutations
+      if (betId === 'quinella') return genCombos(horses, r);
       return genPerms(horses, r);
     case 'wheel':
-      return rest.map((h) => keyPosition === 'top' ? [key, h] : [h, key]);
-    case 'key-horse':
-      // Exacta key: cover both positions
-      if (betId === 'exacta') {
-        return [
-          ...rest.map((h) => [key, h]),
-          ...rest.map((h) => [h, key]),
-        ];
-      }
-      return genPerms(rest, r - 1).map((p) => [key, ...p]);
     case 'part-wheel':
-      return rest.map((h) => keyPosition === 'top' ? [key, h] : [h, key]);
+      // Exacta/Quinella: key position determined by toggle. Quinella ignores
+      // position since it's unordered — always emit [key, h] for display.
+      if (betId === 'exacta') {
+        return rest.map((h) => keyPosition === 'top' ? [key, h] : [h, key]);
+      }
+      return rest.map((h) => [key, h]);
+    case 'key-horse': {
+      // Full key: key horse in each position, all permutations of rest fill
+      // the remaining slots. No horse appears twice in a single ticket.
+      const result: number[][] = [];
+      for (let pos = 0; pos < r; pos++) {
+        const perms = genPerms(rest, r - 1);
+        for (const p of perms) {
+          const ticket = [...p.slice(0, pos), key, ...p.slice(pos)];
+          result.push(ticket);
+        }
+      }
+      return result;
+    }
     default:
       return [];
   }
@@ -100,7 +114,11 @@ export function generateCombinationList(
 export function getMinHorses(betId: string, modifier: ModifierId | null): number {
   const bet = BET_TYPES.find((b) => b.id === betId);
   if (!bet) return 1;
-  if (betId === 'quinella' && modifier === 'box') return 3;
+  // Box needs at least positions+1 horses to be meaningful (otherwise it's
+  // identical to straight). Quinella box minimum is 3.
+  if (modifier === 'box') return betId === 'quinella' ? 3 : bet.positions + 1;
+  // Key/wheel/part-wheel: need the key horse + at least 1 "with" horse
+  if (modifier === 'key-horse' || modifier === 'wheel' || modifier === 'part-wheel') return 2;
   return bet.positions;
 }
 

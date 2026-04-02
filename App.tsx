@@ -16,6 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   BET_TYPES,
   MODIFIERS,
+  MODIFIER_AVAILABILITY,
   createBettor,
   createRaceDaySession,
   createTrack,
@@ -601,33 +602,6 @@ export default function App() {
 
   function handleToggleHorse(horse: number) {
     const isDeselecting = active.selectedHorses.includes(horse);
-    const isExactaKey =
-      active.selectedBetType === 'exacta' && active.selectedModifier === 'key-horse';
-
-    // Exacta key: selecting first horse auto-fills all others; tapping key again clears all
-    if (isExactaKey) {
-      setHorseError(null);
-      if (isDeselecting && active.selectedHorses[0] === horse) {
-        // Tapped the key horse — clear everything
-        updateActive({ selectedHorses: [], result: null });
-        return;
-      }
-      if (active.selectedHorses.length === 0) {
-        // First tap — set key horse + auto-select all non-scratched others
-        const allOthers = Array.from({ length: effectiveNumHorses }, (_, i) => i + 1)
-          .filter((h) => h !== horse && !effectiveScratchedHorses.includes(h));
-        updateActive({ selectedHorses: [horse, ...allOthers], result: null });
-        return;
-      }
-      // Tapping a with-horse toggles it individually
-      updateActive({
-        selectedHorses: isDeselecting
-          ? active.selectedHorses.filter((h) => h !== horse)
-          : [...active.selectedHorses, horse],
-        result: null,
-      });
-      return;
-    }
 
     if (
       !isDeselecting &&
@@ -676,16 +650,17 @@ export default function App() {
     );
   }
 
-  const STRAIGHT_ONLY_BET_TYPES = new Set(['win', 'place', 'show', 'across-the-board']);
-
   function handleSelectBetType(id: string) {
     const bet = BET_TYPES.find((b) => b.id === id);
     setHorseError(null);
+    const allowed = MODIFIER_AVAILABILITY[id] ?? null;
+    const currentModifier = active.selectedModifier ?? 'straight';
+    const resetModifier = allowed != null && !allowed.includes(currentModifier) ? 'straight' : active.selectedModifier;
     updateActive({
       selectedBetType: id,
       selectedHorses: [],
       result: null,
-      selectedModifier: STRAIGHT_ONLY_BET_TYPES.has(id) ? 'straight' : active.selectedModifier,
+      selectedModifier: resetModifier,
       selectedLegs:
         bet?.category === 'multi-race'
           ? Array.from({ length: bet.positions }, () => [])
@@ -733,44 +708,11 @@ export default function App() {
 
     const effectiveModifier = active.selectedModifier ?? 'straight';
     const orderedHorses =
-      effectiveModifier === 'key-horse' || effectiveModifier === 'wheel'
+      effectiveModifier === 'key-horse' || effectiveModifier === 'wheel' || effectiveModifier === 'part-wheel'
         ? active.selectedHorses
         : [...active.selectedHorses].sort((a, b) => a - b);
-    // Exacta key-horse creates two separate bets: key on top + key on bottom
-    if (active.selectedBetType === 'exacta' && effectiveModifier === 'key-horse') {
-      const [keyHorse, ...withHorses] = orderedHorses;
-      const modifierLabel = 'Key Horse';
-      const topBet = {
-        betType: bet.name,
-        modifier: modifierLabel,
-        combinations: withHorses.length,
-        unitCost: active.betUnit,
-        totalCost: withHorses.length * active.betUnit,
-        horses: orderedHorses,
-        combinationList: withHorses.map((h) => [keyHorse, h]),
-        raceNumber: active.raceDay.currentRace,
-        keyPosition: 'top' as const,
-      };
-      const bottomBet = {
-        betType: bet.name,
-        modifier: modifierLabel,
-        combinations: withHorses.length,
-        unitCost: active.betUnit,
-        totalCost: withHorses.length * active.betUnit,
-        horses: orderedHorses,
-        combinationList: withHorses.map((h) => [h, keyHorse]),
-        raceNumber: active.raceDay.currentRace,
-        keyPosition: 'bottom' as const,
-      };
-      updateActive({
-        history: [...active.history, topBet, bottomBet],
-        selectedBetType: null,
-        selectedModifier: null,
-        selectedHorses: [],
-      });
-      return;
-    }
 
+    // Exacta wheel/part-wheel respect key position toggle; all others don't
     const isExactaPositional =
       active.selectedBetType === 'exacta' &&
       (effectiveModifier === 'wheel' || effectiveModifier === 'part-wheel');
@@ -811,9 +753,6 @@ export default function App() {
     });
   }
 
-  const isExactaKey =
-    active.selectedBetType === 'exacta' && active.selectedModifier === 'key-horse';
-
   const canCalculate =
     active.selectedBetType !== null &&
     (isMultiRace
@@ -826,13 +765,11 @@ export default function App() {
     canCalculate && active.selectedBetType
       ? isMultiRace
         ? calculateLegCombinations(active.selectedLegs) * active.betUnit
-        : isExactaKey
-          ? 2 * (active.selectedHorses.length - 1) * active.betUnit
-          : calculateCombinations(
-              active.selectedBetType,
-              active.selectedModifier,
-              active.selectedHorses,
-            ) * active.betUnit
+        : calculateCombinations(
+            active.selectedBetType,
+            active.selectedModifier,
+            active.selectedHorses,
+          ) * active.betUnit
       : null;
 
   return (
@@ -973,7 +910,6 @@ export default function App() {
           onClick={handleCalculate}
           disabled={!canCalculate}
           pendingCost={pendingCost}
-          multiBet={isExactaKey && canCalculate}
         />
 
         <BetHistory

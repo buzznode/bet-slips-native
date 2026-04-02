@@ -56,6 +56,9 @@ function formatLabel(result: BetResult): string {
     const pos = result.keyPosition === 'top' ? '1st' : '2nd';
     return `${result.betType} — ${result.modifier} (key ${pos})`;
   }
+  if (result.modifier === 'Key Horse') {
+    return `${result.betType} — Key Horse (all positions)`;
+  }
   return `${result.betType} — ${result.modifier}`;
 }
 
