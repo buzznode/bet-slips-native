@@ -39,10 +39,17 @@ export default function PositionalSelector({
 
   const allFilled = selectedLegs.every((l) => l.length > 0);
 
+  // Effective count per position: exclude horses locked in other positions
+  const effectiveCounts = selectedLegs.map((leg, posIndex) =>
+    leg.filter(
+      (h) => !selectedLegs.some((other, j) => j !== posIndex && other.length === 1 && other[0] === h),
+    ).length,
+  );
+
   function getHint() {
     if (!allFilled) return 'Select at least one horse per position';
     if (validCombos === 0) return '⚠️ No valid tickets — a horse appears in conflicting positions';
-    return `${selectedLegs.map((l) => l.length).join(' × ')} selections → ${validCombos} valid ticket${validCombos !== 1 ? 's' : ''}`;
+    return `${effectiveCounts.join(' × ')} selections → ${validCombos} valid ticket${validCombos !== 1 ? 's' : ''}`;
   }
 
   return (
